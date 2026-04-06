@@ -2,4 +2,15 @@
 <resources>
     <string name="app_name">Gemma Agent Phone</string>
     <string name="accessibility_description">Allows the agent to observe screens and perform approved actions.</string>
+    <string name="main_summary">Open-source-first Android agent app focused on local Gemma, Qwen, Llama, and Phi models.</string>
+    <string name="open_settings">Open Agent Settings</string>
+    <string name="settings_title">Agent Settings</string>
+    <string name="settings_summary">Choose local providers, models, fallback behavior, and autonomy mode.</string>
+    <string name="provider_label">Primary provider</string>
+    <string name="model_label">Primary model</string>
+    <string name="fallback_provider_label">Fallback provider</string>
+    <string name="fallback_model_label">Fallback model</string>
+    <string name="autonomy_mode_label">Autonomy mode</string>
+    <string name="cloud_fallback_label">Allow cloud fallback later if explicitly enabled</string>
+    <string name="save_settings">Save Settings</string>
 </resources>
