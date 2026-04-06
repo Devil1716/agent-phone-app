@@ -31,4 +31,4 @@ jobs:
           arch: x86_64
           profile: pixel_6
           working-directory: android
-          script: ./gradlew connectedDebugAndroidTest
+          script: chmod +x gradlew && ./gradlew connectedDebugAndroidTest
