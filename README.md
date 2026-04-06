@@ -37,6 +37,12 @@ Preferred runtimes:
 
 - [android](C:\Users\DaRkAngeL\Desktop\os\repos\agent-phone-app\android)
 
+## CI
+
+GitHub Actions now builds the Android app on pushes and pull requests:
+
+- [android-ci.yml](C:\Users\DaRkAngeL\Desktop\os\repos\agent-phone-app\.github\workflows\android-ci.yml)
+
 ## Docs
 
 - [docs/NORMAL_PHONE_PATH.md](C:\Users\DaRkAngeL\Desktop\os\repos\agent-phone-app\docs\NORMAL_PHONE_PATH.md)
