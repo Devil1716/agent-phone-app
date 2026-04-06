@@ -4,9 +4,6 @@ import android.app.Activity
 import android.app.Instrumentation
 import android.content.Intent
 import android.provider.Settings
-import androidx.test.espresso.Espresso.onView
-import androidx.test.espresso.action.ViewActions.click
-import androidx.test.espresso.action.ViewActions.replaceText
 import androidx.test.espresso.intent.Intents
 import androidx.test.espresso.intent.matcher.IntentMatchers.hasAction
 import androidx.test.ext.junit.rules.ActivityScenarioRule
@@ -14,7 +11,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.espresso.intent.Intents.intended
 import androidx.test.espresso.intent.Intents.intending
-import androidx.test.espresso.matcher.ViewMatchers.withId
+import androidx.test.platform.app.InstrumentationRegistry
+import android.widget.Button
+import android.widget.EditText
 import org.hamcrest.Matchers.allOf
 import org.junit.After
 import org.junit.Before
@@ -42,16 +41,22 @@ class IntentDispatchTest {
 
     @Test
     fun dispatchesWifiSettingsIntent() {
-        onView(withId(R.id.commandInput)).perform(replaceText("open Wi-Fi settings"))
-        onView(withId(R.id.runCommandButton)).perform(click())
+        activityRule.scenario.onActivity { activity ->
+            activity.findViewById<EditText>(R.id.commandInput).setText("open Wi-Fi settings")
+            activity.findViewById<Button>(R.id.runCommandButton).performClick()
+        }
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
 
         intended(hasAction(Settings.ACTION_WIFI_SETTINGS))
     }
 
     @Test
     fun dispatchesBrowserSearchIntent() {
-        onView(withId(R.id.commandInput)).perform(replaceText("search the web for Gemma"))
-        onView(withId(R.id.runCommandButton)).perform(click())
+        activityRule.scenario.onActivity { activity ->
+            activity.findViewById<EditText>(R.id.commandInput).setText("search the web for Gemma")
+            activity.findViewById<Button>(R.id.runCommandButton).performClick()
+        }
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
 
         intended(allOf(hasAction(Intent.ACTION_VIEW)))
     }

@@ -1,12 +1,10 @@
 package com.gemma.agentphone
 
+import android.widget.EditText
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
-import androidx.test.espresso.Espresso.onView
-import androidx.test.espresso.assertion.ViewAssertions.matches
-import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
-import androidx.test.espresso.matcher.ViewMatchers.withId
+import com.google.common.truth.Truth.assertThat
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -19,6 +17,10 @@ class SettingsActivityTest {
 
     @Test
     fun showsRelayEndpointInput() {
-        onView(withId(R.id.relayEndpointInput)).check(matches(isDisplayed()))
+        activityRule.scenario.onActivity { activity ->
+            val relayInput = activity.findViewById<EditText>(R.id.relayEndpointInput)
+            assertThat(relayInput).isNotNull()
+            assertThat(relayInput.isShown).isTrue()
+        }
     }
 }

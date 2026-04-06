@@ -89,7 +89,7 @@ class SettingsActivity : AppCompatActivity() {
     ) {
         val provider = providers.firstOrNull { it.id == providerId } ?: providers.first()
         spinner.adapter = createAdapter(provider.models)
-        val index = provider.models.indexOf(selectedModel).takeIf { it != null && it >= 0 } ?: 0
+        val index = provider.models.indexOf(selectedModel).takeIf { it >= 0 } ?: 0
         spinner.setSelection(index)
     }
 }

@@ -1,16 +1,13 @@
 package com.gemma.agentphone
 
+import android.widget.Button
+import android.widget.EditText
+import android.widget.TextView
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
-import androidx.test.espresso.Espresso.onView
-import androidx.test.espresso.action.ViewActions.click
-import androidx.test.espresso.action.ViewActions.replaceText
-import androidx.test.espresso.assertion.ViewAssertions.matches
-import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
-import androidx.test.espresso.matcher.ViewMatchers.withId
-import androidx.test.espresso.matcher.ViewMatchers.withText
-import org.hamcrest.Matchers.containsString
+import androidx.test.platform.app.InstrumentationRegistry
+import com.google.common.truth.Truth.assertThat
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -23,16 +20,30 @@ class MainActivityTest {
 
     @Test
     fun rendersExecutionTraceForGeneralAppCommand() {
-        onView(withId(R.id.commandInput)).perform(replaceText("open Spotify"))
-        onView(withId(R.id.runCommandButton)).perform(click())
+        activityRule.scenario.onActivity { activity ->
+            activity.findViewById<EditText>(R.id.commandInput).setText("open Spotify")
+            activity.findViewById<Button>(R.id.runCommandButton).performClick()
+        }
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
 
-        onView(withId(R.id.traceText)).check(matches(withText(containsString("Goal: open Spotify"))))
-        onView(withId(R.id.traceText)).check(matches(withText(containsString("Execution plan prepared successfully."))))
+        activityRule.scenario.onActivity { activity ->
+            val trace = activity.findViewById<TextView>(R.id.traceText).text.toString()
+            assertThat(trace).contains("Goal: open Spotify")
+            assertThat(trace).contains("Execution plan prepared successfully.")
+        }
     }
 
     @Test
     fun opensSettingsScreen() {
-        onView(withId(R.id.openSettingsButton)).perform(click())
-        onView(withText(R.string.settings_title)).check(matches(isDisplayed()))
+        activityRule.scenario.onActivity { activity ->
+            activity.findViewById<Button>(R.id.openSettingsButton).performClick()
+        }
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+
+        val resumedActivity = androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry.getInstance()
+            .getActivitiesInStage(androidx.test.runner.lifecycle.Stage.RESUMED)
+            .firstOrNull()
+
+        assertThat(resumedActivity).isInstanceOf(SettingsActivity::class.java)
     }
 }
