@@ -1,7 +1,6 @@
 package com.gemma.agentphone
 
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
@@ -15,6 +14,11 @@ import com.gemma.agentphone.model.AiProviderRegistry
 import com.gemma.agentphone.model.AiSettingsRepository
 
 class MainActivity : AppCompatActivity() {
+    companion object {
+        @JvmStatic
+        var externalActionLauncher: ExternalActionLauncher = DefaultExternalActionLauncher
+    }
+
     private val providerRegistry = AiProviderRegistry()
     private val runtimeFactory = AgentRuntimeFactory()
     private lateinit var statusText: TextView
@@ -65,7 +69,7 @@ class MainActivity : AppCompatActivity() {
     private fun runCommand() {
         val trace = runtimeFactory.createCoordinator().run(commandInput.text.toString())
         traceText.text = renderTrace(trace)
-        trace.externalActions.forEach { launchExternalAction(it.spec) }
+        trace.externalActions.forEach { externalActionLauncher.launch(this, it.spec) }
     }
 
     private fun renderTrace(trace: ExecutionTrace): String {
@@ -87,11 +91,4 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun launchExternalAction(spec: IntentSpec) {
-        val intent = Intent(spec.action).apply {
-            spec.data?.let { data = Uri.parse(it) }
-            spec.packageName?.let(::setPackage)
-        }
-        startActivity(intent)
-    }
 }
