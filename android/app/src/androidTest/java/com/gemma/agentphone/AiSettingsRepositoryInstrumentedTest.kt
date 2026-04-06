@@ -2,8 +2,8 @@ package com.gemma.agentphone
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.google.common.truth.Truth.assertThat
 import com.gemma.agentphone.model.AiSettingsRepository
+import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -17,6 +17,6 @@ class AiSettingsRepositoryInstrumentedTest {
 
         repository.save(updated)
 
-        assertThat(repository.load().relayEndpoint).isEqualTo("http://10.0.2.2:8080")
+        assertEquals("http://10.0.2.2:8080", repository.load().relayEndpoint)
     }
 }
