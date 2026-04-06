@@ -4,9 +4,10 @@ import android.os.Bundle
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.CheckBox
+import android.widget.EditText
 import android.widget.Spinner
 import androidx.appcompat.app.AppCompatActivity
-import com.gemma.agentphone.model.AiProvider
+import com.gemma.agentphone.model.AiProviderDescriptor
 import com.gemma.agentphone.model.AiProviderRegistry
 import com.gemma.agentphone.model.AiSettings
 import com.gemma.agentphone.model.AiSettingsRepository
@@ -19,6 +20,7 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var fallbackModelSpinner: Spinner
     private lateinit var autonomySpinner: Spinner
     private lateinit var cloudFallbackCheckbox: CheckBox
+    private lateinit var relayEndpointInput: EditText
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,6 +32,7 @@ class SettingsActivity : AppCompatActivity() {
         fallbackModelSpinner = findViewById(R.id.fallbackModelSpinner)
         autonomySpinner = findViewById(R.id.autonomySpinner)
         cloudFallbackCheckbox = findViewById(R.id.cloudFallbackCheckbox)
+        relayEndpointInput = findViewById(R.id.relayEndpointInput)
 
         val settingsRepository = AiSettingsRepository(this)
         val settings = settingsRepository.load()
@@ -45,6 +48,7 @@ class SettingsActivity : AppCompatActivity() {
         fallbackProviderSpinner.setSelection(providerIds.indexOf(settings.fallbackProvider).coerceAtLeast(0))
         autonomySpinner.setSelection(autonomyModes.indexOf(settings.autonomyMode).coerceAtLeast(0))
         cloudFallbackCheckbox.isChecked = settings.allowCloudFallback
+        relayEndpointInput.setText(settings.relayEndpoint)
 
         updateModelSpinner(modelSpinner, providers, settings.activeProvider, settings.activeModel)
         updateModelSpinner(fallbackModelSpinner, providers, settings.fallbackProvider, settings.fallbackModel)
@@ -64,7 +68,8 @@ class SettingsActivity : AppCompatActivity() {
                 fallbackProvider = fallbackProviderSpinner.selectedItem.toString(),
                 fallbackModel = fallbackModelSpinner.selectedItem.toString(),
                 autonomyMode = autonomySpinner.selectedItem.toString(),
-                allowCloudFallback = cloudFallbackCheckbox.isChecked
+                allowCloudFallback = cloudFallbackCheckbox.isChecked,
+                relayEndpoint = relayEndpointInput.text.toString().trim()
             )
 
             settingsRepository.save(nextSettings)
@@ -78,7 +83,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun updateModelSpinner(
         spinner: Spinner,
-        providers: List<AiProvider>,
+        providers: List<AiProviderDescriptor>,
         providerId: String,
         selectedModel: String?
     ) {

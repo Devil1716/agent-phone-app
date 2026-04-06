@@ -1,0 +1,28 @@
+package com.gemma.agentphone.model
+
+class AiSettingsStore(
+    private val keyValueStore: KeyValueStore
+) {
+    fun load(): AiSettings {
+        val defaults = AiSettings.defaultGemma()
+        return AiSettings(
+            activeProvider = keyValueStore.getString("activeProvider", defaults.activeProvider),
+            activeModel = keyValueStore.getString("activeModel", defaults.activeModel),
+            fallbackProvider = keyValueStore.getString("fallbackProvider", defaults.fallbackProvider),
+            fallbackModel = keyValueStore.getString("fallbackModel", defaults.fallbackModel),
+            autonomyMode = keyValueStore.getString("autonomyMode", defaults.autonomyMode),
+            allowCloudFallback = keyValueStore.getBoolean("allowCloudFallback", defaults.allowCloudFallback),
+            relayEndpoint = keyValueStore.getString("relayEndpoint", defaults.relayEndpoint)
+        )
+    }
+
+    fun save(settings: AiSettings) {
+        keyValueStore.putString("activeProvider", settings.activeProvider)
+        keyValueStore.putString("activeModel", settings.activeModel)
+        keyValueStore.putString("fallbackProvider", settings.fallbackProvider)
+        keyValueStore.putString("fallbackModel", settings.fallbackModel)
+        keyValueStore.putString("autonomyMode", settings.autonomyMode)
+        keyValueStore.putBoolean("allowCloudFallback", settings.allowCloudFallback)
+        keyValueStore.putString("relayEndpoint", settings.relayEndpoint)
+    }
+}

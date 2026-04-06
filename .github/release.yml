@@ -1,0 +1,15 @@
+changelog:
+  categories:
+    - title: Features
+      labels:
+        - type:feature
+    - title: Bug Fixes
+      labels:
+        - type:bug
+        - type:regression
+    - title: Device Compatibility
+      labels:
+        - type:device
+    - title: Other Changes
+      labels:
+        - "*"

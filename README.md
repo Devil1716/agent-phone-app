@@ -1,63 +1,64 @@
-# Agent Phone App
+# Gemma Agent Phone App
 
-This is the normal-phone path for the project.
+[![Android CI](https://github.com/Devil1716/agent-phone-app/actions/workflows/ci.yml/badge.svg)](https://github.com/Devil1716/agent-phone-app/actions/workflows/ci.yml)
+[![Android Emulator](https://github.com/Devil1716/agent-phone-app/actions/workflows/emulator.yml/badge.svg)](https://github.com/Devil1716/agent-phone-app/actions/workflows/emulator.yml)
+[![Dependency Scan](https://github.com/Devil1716/agent-phone-app/actions/workflows/dependency-scan.yml/badge.svg)](https://github.com/Devil1716/agent-phone-app/actions/workflows/dependency-scan.yml)
 
-It is meant to run on a regular Android device as an app-based agent layer.
+Gemma Agent Phone App is a public Android project for building a general app-control agent that can act across common phone apps, browser flows, and system screens with visible execution tracing and safety checks.
 
-The model strategy for this repo is open-source-first.
+## Product Direction
 
-## Scope
+- Android 12-14 support target
+- open-source-first model strategy
+- Gemma as the primary model family
+- hybrid local + laptop relay inference
+- near-real-time fast path for common supported flows
+- slower recovery path for ambiguous or complex app navigation
 
-- custom Android app stack
-- Gemma-first agent flow
-- open-source local model support
-- accessibility-driven navigation
-- voice-first interaction
-- settings for model and autonomy mode
+## Repository Standards
 
-## Model Direction
+- PR-only delivery into `main`
+- required CI, emulator, and security checks
+- internal alpha release flow before wider public rollout
+- explicit device matrix and physical-device checklist
+- community docs and security reporting guidance
 
-Primary preference:
+## Project Layout
 
-- `Gemma` as the main model family
+- [android](C:\Users\DaRkAngeL\Desktop\os\repos\agent-phone-app\android): Android application and tests
+- [docs/ARCHITECTURE.md](C:\Users\DaRkAngeL\Desktop\os\repos\agent-phone-app\docs\ARCHITECTURE.md): runtime architecture
+- [docs/AUTOMATION_SAFETY.md](C:\Users\DaRkAngeL\Desktop\os\repos\agent-phone-app\docs\AUTOMATION_SAFETY.md): safety and confirmation rules
+- [docs/MODEL_PROVIDERS.md](C:\Users\DaRkAngeL\Desktop\os\repos\agent-phone-app\docs\MODEL_PROVIDERS.md): model/provider strategy
+- [docs/DEVICE_MATRIX.md](C:\Users\DaRkAngeL\Desktop\os\repos\agent-phone-app\docs\DEVICE_MATRIX.md): compatibility and release gate devices
+- [docs/PHYSICAL_DEVICE_CHECKLIST.md](C:\Users\DaRkAngeL\Desktop\os\repos\agent-phone-app\docs\PHYSICAL_DEVICE_CHECKLIST.md): manual release checklist
+- [docs/RELEASE_PROCESS.md](C:\Users\DaRkAngeL\Desktop\os\repos\agent-phone-app\docs\RELEASE_PROCESS.md): alpha and tagged release flow
+- [docs/LABELS_AND_MILESTONES.md](C:\Users\DaRkAngeL\Desktop\os\repos\agent-phone-app\docs\LABELS_AND_MILESTONES.md): issue/PR triage conventions
 
-Other preferred open-source options:
+## CI/CD
 
-- `Qwen`
-- `Llama`
-- `Phi`
+The app repo uses a multi-stage workflow set:
 
-Preferred runtimes:
+- [ci.yml](C:\Users\DaRkAngeL\Desktop\os\repos\agent-phone-app\.github\workflows\ci.yml): lint, unit tests, build
+- [emulator.yml](C:\Users\DaRkAngeL\Desktop\os\repos\agent-phone-app\.github\workflows\emulator.yml): emulator instrumentation tests
+- [dependency-scan.yml](C:\Users\DaRkAngeL\Desktop\os\repos\agent-phone-app\.github\workflows\dependency-scan.yml): dependency review and CodeQL
+- [release-alpha.yml](C:\Users\DaRkAngeL\Desktop\os\repos\agent-phone-app\.github\workflows\release-alpha.yml): signed alpha builds and tagged releases
 
-- on-device runtime integration
-- `llama.cpp`
-- `Ollama` when local service mode is acceptable
+## Local Setup
 
-## Main Project
+1. Install Android Studio with Android SDK 34.
+2. Install JDK 17.
+3. Run `android/gradlew testDebugUnitTest`.
+4. Run `android/gradlew connectedDebugAndroidTest` with an emulator or device connected.
 
-- [android](C:\Users\DaRkAngeL\Desktop\os\repos\agent-phone-app\android)
+## Status
 
-## CI
+The current codebase contains:
 
-GitHub Actions now builds the Android app on pushes and pull requests:
+- a configurable settings screen for model and relay selection
+- a testable command input and execution trace UI
+- a formalized agent runtime scaffold
+- unit and instrumentation test coverage for the current supported behaviors
 
-- [android-ci.yml](C:\Users\DaRkAngeL\Desktop\os\repos\agent-phone-app\.github\workflows\android-ci.yml)
+## Contributing
 
-## Docs
-
-- [docs/NORMAL_PHONE_PATH.md](C:\Users\DaRkAngeL\Desktop\os\repos\agent-phone-app\docs\NORMAL_PHONE_PATH.md)
-
-## Git Recommendation
-
-This folder should be its own GitHub repository.
-
-Example:
-
-```bash
-cd repos/agent-phone-app
-git init
-git remote add origin <your-app-repo-url>
-git add .
-git commit -m "Initial Android agent app"
-git push -u origin main
-```
+See [CONTRIBUTING.md](C:\Users\DaRkAngeL\Desktop\os\repos\agent-phone-app\CONTRIBUTING.md) before opening a pull request.

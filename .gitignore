@@ -1,8 +1,11 @@
 .gradle/
 build/
 */build/
+android/.gradle/
+android/app/build/
 .idea/
 local.properties
 *.iml
 captures/
+docs/emu-*
 .DS_Store

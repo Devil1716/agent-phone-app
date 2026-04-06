@@ -2,10 +2,10 @@
 <resources>
     <string name="app_name">Gemma Agent Phone</string>
     <string name="accessibility_description">Allows the agent to observe screens and perform approved actions.</string>
-    <string name="main_summary">Open-source-first Android agent app focused on local Gemma, Qwen, Llama, and Phi models.</string>
+    <string name="main_summary">Open-source-first Android agent app focused on local Gemma with fast-path app control and relay-backed recovery.</string>
     <string name="open_settings">Open Agent Settings</string>
     <string name="settings_title">Agent Settings</string>
-    <string name="settings_summary">Choose local providers, models, fallback behavior, and autonomy mode.</string>
+    <string name="settings_summary">Choose local providers, relay fallback, and autonomy defaults for the fast and slow execution paths.</string>
     <string name="provider_label">Primary provider</string>
     <string name="model_label">Primary model</string>
     <string name="fallback_provider_label">Fallback provider</string>
@@ -13,4 +13,11 @@
     <string name="autonomy_mode_label">Autonomy mode</string>
     <string name="cloud_fallback_label">Allow cloud fallback later if explicitly enabled</string>
     <string name="save_settings">Save Settings</string>
+    <string name="relay_endpoint_label">Relay endpoint</string>
+    <string name="relay_endpoint_hint">http://192.168.1.2:8080</string>
+    <string name="command_hint">Try: open Wi-Fi settings, search the web for Gemma, play lo-fi music, or message Rahul I am late.</string>
+    <string name="run_command">Run Command</string>
+    <string name="stop_command">Stop</string>
+    <string name="execution_trace">Execution Trace</string>
+    <string name="trace_idle">No command has been run yet.</string>
 </resources>

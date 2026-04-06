@@ -1,0 +1,15 @@
+name: Regression report
+description: Report functionality that previously worked and now fails.
+title: "[Regression]: "
+labels: ["type:regression", "needs:triage"]
+body:
+  - type: textarea
+    id: regression
+    attributes:
+      label: Regression details
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Last known good version or commit

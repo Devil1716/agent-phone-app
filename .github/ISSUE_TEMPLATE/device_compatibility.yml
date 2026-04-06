@@ -1,0 +1,18 @@
+name: Device compatibility report
+description: Report a device-specific compatibility issue or validation result.
+title: "[Device]: "
+labels: ["type:device", "needs:triage"]
+body:
+  - type: input
+    id: device
+    attributes:
+      label: Device and Android version
+      placeholder: Samsung S23, Android 14
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: What worked or failed
+    validations:
+      required: true
