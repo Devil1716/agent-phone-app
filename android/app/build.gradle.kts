@@ -61,6 +61,10 @@ android {
         jvmTarget = "17"
     }
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     testOptions {
         animationsDisabled = true
         unitTests.isIncludeAndroidResources = true
@@ -76,6 +80,8 @@ dependencies {
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.google.mediapipe:tasks-genai:0.10.14")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.1")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("com.google.truth:truth:1.4.4")

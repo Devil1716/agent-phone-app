@@ -36,7 +36,7 @@ class TemplateTaskPlanner : TaskPlanner {
             )
 
             GoalCategory.GENERAL_APP_CONTROL -> listOf(
-                TaskStep("general_app_control", StepType.REPORT_RESULT, "Hand off to slower general app-control planner", payload = goal.targetApp)
+                TaskStep("autonomous_control", StepType.EXECUTE_AUTONOMOUSLY, "Execute custom command autonomously via Gemma 4", payload = goal.text)
             )
 
             GoalCategory.UNSUPPORTED -> listOf(

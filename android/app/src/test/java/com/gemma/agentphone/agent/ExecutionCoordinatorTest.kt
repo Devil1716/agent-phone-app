@@ -57,13 +57,14 @@ class ExecutionCoordinatorTest {
     }
 
     @Test
-    fun blockedStepStopsExecution() {
+    fun unrecognizedCommandFallsBackToGeneralAppControl() {
         val coordinator = buildCoordinator()
-        val trace = coordinator.run("do something unsupported and weird")
+        val trace = coordinator.run("do something completely unrecognized")
 
-        assertThat(trace.goal.category).isEqualTo(GoalCategory.UNSUPPORTED)
+        assertThat(trace.goal.category).isEqualTo(GoalCategory.GENERAL_APP_CONTROL)
         assertThat(trace.entries).isNotEmpty()
-        assertThat(trace.entries.last().status).isEqualTo(StepStatus.BLOCKED)
+        assertThat(trace.entries.last().status).isEqualTo(StepStatus.SUCCESS)
+        assertThat(trace.entries.last().executorName).isEqualTo("AccessibilityExecutor")
     }
 
     @Test

@@ -125,6 +125,82 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- Gemma Model Download Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/modelCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="32dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="2dp"
+            app:strokeColor="@color/cardStroke"
+            app:strokeWidth="1dp">
+            
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+                
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/onboarding_model_title"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/primary"
+                    android:layout_marginBottom="6dp" />
+                
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/onboarding_model_desc"
+                    android:textSize="14sp"
+                    android:alpha="0.8"
+                    android:layout_marginBottom="12dp" />
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/downloadModelButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/onboarding_model_download_button"
+                        style="@style/Widget.GemmaAgent.Button.Outlined"
+                        app:cornerRadius="12dp" />
+
+                    <LinearLayout
+                        android:id="@+id/downloadProgressContainer"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+                        <com.google.android.material.progressindicator.LinearProgressIndicator
+                            android:id="@+id/modelDownloadProgress"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="4dp"
+                            app:indicatorColor="@color/primary"
+                            app:trackColor="@color/cardStroke"
+                            app:trackThickness="8dp"
+                            app:trackCornerRadius="4dp" />
+
+                        <TextView
+                            android:id="@+id/modelDownloadStatus"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/onboarding_model_downloading"
+                            android:textSize="12sp"
+                            android:gravity="center"
+                            android:alpha="0.6" />
+                    </LinearLayout>
+                </FrameLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
         <!-- Action Buttons -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/getStartedButton"

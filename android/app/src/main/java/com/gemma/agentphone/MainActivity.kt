@@ -105,32 +105,62 @@ class MainActivity : AppCompatActivity() {
         if (traceText.text.isNullOrBlank()) {
             traceText.text = getString(R.string.trace_idle)
         }
+        checkForUpdates()
     }
 
     private fun runCommand() {
         val command = commandInput.text.toString()
         if (command.isBlank()) return
 
-        val trace = runtimeFactory.createCoordinator().run(command)
+        traceText.text = "🤖 Gemma 4 is thinking and analyzing the screen..."
+        val runCmdBtn = findViewById<android.view.View>(R.id.runCommandButton)
+        runCmdBtn.isEnabled = false
 
-        // Save to history
-        historyRepository.add(
-            ExecutionHistoryEntry(
-                timestampMs = System.currentTimeMillis(),
-                commandText = command,
-                category = trace.goal.category.name,
-                strategy = trace.strategy.name,
-                resultSummary = trace.finalMessage,
-                awaitedConfirmation = trace.awaitingConfirmation
-            )
-        )
+        Thread {
+            val settings = AiSettingsRepository(this).load()
+            val trace = runtimeFactory.createCoordinator(this, settings, providerRegistry).run(command)
 
-        traceText.text = renderTrace(trace)
+            runOnUiThread {
+                runCmdBtn.isEnabled = true
+                // Save to history
+                historyRepository.add(
+                    ExecutionHistoryEntry(
+                        timestampMs = System.currentTimeMillis(),
+                        commandText = command,
+                        category = trace.goal.category.name,
+                        strategy = trace.strategy.name,
+                        resultSummary = trace.finalMessage,
+                        awaitedConfirmation = trace.awaitingConfirmation
+                    )
+                )
 
-        if (trace.awaitingConfirmation) {
-            showConfirmationDialog(trace)
-        } else {
-            trace.externalActions.forEach { externalActionLauncher.launch(this, it.spec) }
+                traceText.text = renderTrace(trace)
+
+                if (trace.awaitingConfirmation) {
+                    showConfirmationDialog(trace)
+                } else {
+                    trace.externalActions.forEach { externalActionLauncher.launch(this, it.spec) }
+                }
+            }
+        }.start()
+    }
+
+    private fun checkForUpdates() {
+        val updateManager = com.gemma.agentphone.agent.UpdateManager(this)
+        updateManager.checkForUpdates { version, url ->
+            runOnUiThread {
+                val updateCard = findViewById<com.google.android.material.card.MaterialCardView>(R.id.updateCard)
+                val updateText = findViewById<TextView>(R.id.updateText)
+                val downloadBtn = findViewById<com.google.android.material.button.MaterialButton>(R.id.downloadUpdateButton)
+
+                updateText.text = "New Gemma Agent $version Available!"
+                updateCard.visibility = android.view.View.VISIBLE
+
+                downloadBtn.setOnClickListener {
+                    val browserIntent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))
+                    startActivity(browserIntent)
+                }
+            }
         }
     }
 

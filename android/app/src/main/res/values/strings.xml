@@ -48,6 +48,13 @@
     <string name="onboarding_get_started">Get Started</string>
     <string name="onboarding_skip">Skip for Now</string>
 
+    <!-- Onboarding Model Download -->
+    <string name="onboarding_model_title">Gemma 4 Intelligence</string>
+    <string name="onboarding_model_desc">Download the 1.3GB AI model to your phone for 100% offline, private intelligence.</string>
+    <string name="onboarding_model_download_button">Download Model (1.3GB)</string>
+    <string name="onboarding_model_downloading">Downloading model: %1$d%%</string>
+    <string name="onboarding_model_ready">Model Ready</string>
+
     <!-- Notification listener -->
     <string name="notification_listener_label">Gemma Agent Notification Listener</string>
 </resources>
