@@ -34,13 +34,14 @@ class AiProviderRegistry {
                 supportsOffline = true
             )
         ),
-        StaticAiProvider(
+        HttpAiProvider(
             AiProviderDescriptor(
                 id = "relay-gemma",
                 displayName = "Relay Gemma",
                 models = listOf("gemma-9b-instruct"),
                 supportsOffline = false
-            )
+            ),
+            baseUrl = "http://192.168.1.2:8080"
         ),
         StaticAiProvider(
             AiProviderDescriptor(

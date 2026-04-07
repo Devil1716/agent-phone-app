@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary brand palette – deep indigo -->
+    <color name="primary">#FF3949AB</color>
+    <color name="primaryDark">#FF283593</color>
+    <color name="primaryVariant">#FF1A237E</color>
+    <color name="onPrimary">#FFFFFFFF</color>
+
+    <!-- Secondary accent – teal -->
+    <color name="secondary">#FF00897B</color>
+    <color name="secondaryVariant">#FF00695C</color>
+    <color name="onSecondary">#FFFFFFFF</color>
+
+    <!-- Surface & background -->
+    <color name="background">#FFF5F5F5</color>
+    <color name="surface">#FFFFFFFF</color>
+    <color name="onBackground">#FF212121</color>
+    <color name="onSurface">#FF212121</color>
+
+    <!-- Error -->
+    <color name="error">#FFD32F2F</color>
+    <color name="onError">#FFFFFFFF</color>
+
+    <!-- Custom accents for trace UI -->
+    <color name="traceSuccess">#FF2E7D32</color>
+    <color name="traceBlocked">#FFC62828</color>
+    <color name="tracePending">#FFF9A825</color>
+    <color name="traceSkipped">#FF757575</color>
+
+    <!-- Card tints -->
+    <color name="cardStroke">#1F3949AB</color>
+    <color name="statusCardBackground">#FFF0F0FF</color>
+    <color name="traceCardBackground">#FFFAFAFA</color>
+</resources>
