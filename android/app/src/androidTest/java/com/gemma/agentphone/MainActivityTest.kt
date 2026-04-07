@@ -24,13 +24,23 @@ class MainActivityTest {
             activity.findViewById<EditText>(R.id.commandInput).setText("open Spotify")
             activity.findViewById<Button>(R.id.runCommandButton).performClick()
         }
-        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
 
-        activityRule.scenario.onActivity { activity ->
-            val trace = activity.findViewById<TextView>(R.id.traceText).text.toString()
-            assertThat(trace).contains("Goal: open Spotify")
-            assertThat(trace).contains("Execution plan prepared successfully.")
+        // Wait for the background thread to complete (Gemma thinking...)
+        var trace = ""
+        val startTime = System.currentTimeMillis()
+        while (System.currentTimeMillis() - startTime < 10000) {
+            activityRule.scenario.onActivity { activity ->
+                trace = activity.findViewById<TextView>(R.id.traceText).text.toString()
+            }
+            if (trace.contains("Goal: open Spotify") && trace.contains("Execution plan prepared successfully.")) {
+                break
+            }
+            Thread.sleep(500)
         }
+
+        assertThat(trace).contains("Goal: open Spotify")
+        assertThat(trace).contains("Execution plan prepared successfully.")
+        assertThat(trace).contains("Strategy: AUTONOMOUS")
     }
 
     @Test
