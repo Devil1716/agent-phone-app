@@ -117,29 +117,37 @@ class MainActivity : AppCompatActivity() {
         runCmdBtn.isEnabled = false
 
         Thread {
-            val settings = AiSettingsRepository(this).load()
-            val trace = runtimeFactory.createCoordinator(this, settings, providerRegistry).run(command)
+            try {
+                val settings = AiSettingsRepository(this).load()
+                val trace = runtimeFactory.createCoordinator(this, settings, providerRegistry).run(command)
 
-            runOnUiThread {
-                runCmdBtn.isEnabled = true
-                // Save to history
-                historyRepository.add(
-                    ExecutionHistoryEntry(
-                        timestampMs = System.currentTimeMillis(),
-                        commandText = command,
-                        category = trace.goal.category.name,
-                        strategy = trace.strategy.name,
-                        resultSummary = trace.finalMessage,
-                        awaitedConfirmation = trace.awaitingConfirmation
+                runOnUiThread {
+                    runCmdBtn.isEnabled = true
+                    // Save to history
+                    historyRepository.add(
+                        ExecutionHistoryEntry(
+                            timestampMs = System.currentTimeMillis(),
+                            commandText = command,
+                            category = trace.goal.category.name,
+                            strategy = trace.strategy.name,
+                            resultSummary = trace.finalMessage,
+                            awaitedConfirmation = trace.awaitingConfirmation
+                        )
                     )
-                )
 
-                traceText.text = renderTrace(trace)
+                    traceText.text = renderTrace(trace)
 
-                if (trace.awaitingConfirmation) {
-                    showConfirmationDialog(trace)
-                } else {
-                    trace.externalActions.forEach { externalActionLauncher.launch(this, it.spec) }
+                    if (trace.awaitingConfirmation) {
+                        showConfirmationDialog(trace)
+                    } else {
+                        trace.externalActions.forEach { externalActionLauncher.launch(this, it.spec) }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                runOnUiThread {
+                    runCmdBtn.isEnabled = true
+                    traceText.text = "❌ Error running Gemma 4: ${e.localizedMessage ?: "Unknown error"}\n\nCheck if the model is downloaded and your device supports the AI engine."
                 }
             }
         }.start()
