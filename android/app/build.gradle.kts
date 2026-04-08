@@ -18,6 +18,15 @@ android {
                 storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
                 keyAlias = System.getenv("ANDROID_KEY_ALIAS")
                 keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+            } else {
+                // Restore fallback for CI builds without secrets
+                val localJks = file("release.jks")
+                if (localJks.exists()) {
+                    storeFile = localJks
+                    storePassword = "gemma123"
+                    keyAlias = "gemma"
+                    keyPassword = "gemma123"
+                }
             }
         }
     }
