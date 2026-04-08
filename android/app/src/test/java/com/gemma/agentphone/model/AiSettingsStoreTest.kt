@@ -10,6 +10,7 @@ class AiSettingsStoreTest {
         val store = AiSettingsStore(keyValueStore)
         val updated = AiSettings.defaultGemma().copy(
             activeProvider = "qwen-local",
+            customPrompt = "Prefer WhatsApp for messages",
             relayEndpoint = "http://10.0.2.2:8080",
             modelDownloadUrl = "https://example.com/model.task",
             huggingFaceToken = "hf_test_token"
@@ -19,6 +20,7 @@ class AiSettingsStoreTest {
         val restored = store.load()
 
         assertThat(restored.activeProvider).isEqualTo("qwen-local")
+        assertThat(restored.customPrompt).isEqualTo("Prefer WhatsApp for messages")
         assertThat(restored.relayEndpoint).isEqualTo("http://10.0.2.2:8080")
         assertThat(restored.modelDownloadUrl).isEqualTo("https://example.com/model.task")
         assertThat(restored.huggingFaceToken).isEqualTo("hf_test_token")

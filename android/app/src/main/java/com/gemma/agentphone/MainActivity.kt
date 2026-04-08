@@ -131,9 +131,7 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(BuildConfig.DEFAULT_MODEL_SOURCE_PAGE_URL)))
         }
 
-        intent?.getStringExtra("prefill_command")?.let { prefill ->
-            commandInput.setText(prefill)
-        }
+        applyPrefillCommand(intent)
     }
 
     override fun onResume() {
@@ -159,6 +157,12 @@ class MainActivity : AppCompatActivity() {
         }
         refreshModelStatus()
         checkForUpdates()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        applyPrefillCommand(intent)
     }
 
     override fun onPause() {
@@ -323,6 +327,13 @@ class MainActivity : AppCompatActivity() {
             speechLauncher.launch(intent)
         } catch (_: Exception) {
             traceText.text = "Voice input is not available on this device."
+        }
+    }
+
+    private fun applyPrefillCommand(intent: Intent?) {
+        intent?.getStringExtra("prefill_command")?.let { prefill ->
+            commandInput.setText(prefill)
+            commandInput.setSelection(prefill.length)
         }
     }
 

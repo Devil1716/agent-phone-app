@@ -70,6 +70,23 @@ class IntentExecutorTest {
     }
 
     @Test
+    fun draftMessageProducesWhatsAppIntentWhenRequested() {
+        val step = TaskStep(
+            "msg",
+            StepType.DRAFT_MESSAGE,
+            "Draft",
+            targetApp = "whatsapp",
+            payload = "hello there"
+        )
+        val result = executor.execute(step, observation)
+
+        assertThat(result.status).isEqualTo(StepStatus.SUCCESS)
+        assertThat(result.externalAction!!.spec.action).isEqualTo("android.intent.action.VIEW")
+        assertThat(result.externalAction!!.spec.packageName).isEqualTo("com.whatsapp")
+        assertThat(result.externalAction!!.spec.data).contains("wa.me")
+    }
+
+    @Test
     fun unsupportedStepTypeIsSkipped() {
         val step = TaskStep("x", StepType.SUMMARIZE_NOTIFICATIONS, "Summarize")
         val result = executor.execute(step, observation)

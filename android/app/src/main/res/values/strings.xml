@@ -11,6 +11,8 @@
     <string name="fallback_provider_label">Fallback provider</string>
     <string name="fallback_model_label">Fallback model</string>
     <string name="autonomy_mode_label">Autonomy mode</string>
+    <string name="custom_prompt_label">Custom operating prompt</string>
+    <string name="custom_prompt_hint">Example: When I ask to send a message, prefer WhatsApp, open the app, draft the text, and only send after a confirmation step.</string>
     <string name="cloud_fallback_label">Allow cloud fallback later if explicitly enabled</string>
     <string name="save_settings">Save Settings</string>
     <string name="relay_endpoint_label">Relay endpoint</string>

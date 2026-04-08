@@ -32,14 +32,19 @@ class AgentRuntimeFactory {
         }
 
         return ExecutionCoordinator(
-            goalInterpreter = RuleBasedGoalInterpreter(),
+            goalInterpreter = PromptAwareGoalInterpreter(settings),
             taskPlanner = TemplateTaskPlanner(),
             policyEngine = DefaultPolicyEngine(),
             observationService = DefaultObservationService(),
             executors = listOf(
+                AppLaunchExecutor(AndroidInstalledAppResolver(context)),
                 IntentExecutor(),
                 BrowserExecutor(),
-                AccessibilityExecutor(primaryProvider)
+                AccessibilityExecutor(
+                    aiProvider = primaryProvider,
+                    customPrompt = settings.customPrompt,
+                    autonomyMode = settings.autonomyMode
+                )
             )
         )
     }

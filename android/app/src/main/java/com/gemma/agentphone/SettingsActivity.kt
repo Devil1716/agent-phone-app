@@ -20,6 +20,7 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var fallbackModelSpinner: Spinner
     private lateinit var autonomySpinner: Spinner
     private lateinit var cloudFallbackCheckbox: CheckBox
+    private lateinit var customPromptInput: EditText
     private lateinit var relayEndpointInput: EditText
     private lateinit var modelDownloadUrlInput: EditText
     private lateinit var huggingFaceTokenInput: EditText
@@ -34,6 +35,7 @@ class SettingsActivity : AppCompatActivity() {
         fallbackModelSpinner = findViewById(R.id.fallbackModelSpinner)
         autonomySpinner = findViewById(R.id.autonomySpinner)
         cloudFallbackCheckbox = findViewById(R.id.cloudFallbackCheckbox)
+        customPromptInput = findViewById(R.id.customPromptInput)
         relayEndpointInput = findViewById(R.id.relayEndpointInput)
         modelDownloadUrlInput = findViewById(R.id.modelDownloadUrlInput)
         huggingFaceTokenInput = findViewById(R.id.huggingFaceTokenInput)
@@ -52,6 +54,7 @@ class SettingsActivity : AppCompatActivity() {
         fallbackProviderSpinner.setSelection(providerIds.indexOf(settings.fallbackProvider).coerceAtLeast(0))
         autonomySpinner.setSelection(autonomyModes.indexOf(settings.autonomyMode).coerceAtLeast(0))
         cloudFallbackCheckbox.isChecked = settings.allowCloudFallback
+        customPromptInput.setText(settings.customPrompt)
         relayEndpointInput.setText(settings.relayEndpoint)
         modelDownloadUrlInput.setText(settings.modelDownloadUrl)
         huggingFaceTokenInput.setText(settings.huggingFaceToken)
@@ -77,6 +80,7 @@ class SettingsActivity : AppCompatActivity() {
                 activeModel = modelSpinner.selectedItem.toString(),
                 fallbackProvider = fallbackProviderSpinner.selectedItem.toString(),
                 fallbackModel = fallbackModelSpinner.selectedItem.toString(),
+                customPrompt = customPromptInput.text.toString().trim(),
                 autonomyMode = autonomySpinner.selectedItem.toString(),
                 allowCloudFallback = cloudFallbackCheckbox.isChecked,
                 relayEndpoint = relayEndpointInput.text.toString().trim(),

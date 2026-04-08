@@ -11,8 +11,21 @@ class TemplateTaskPlanner : TaskPlanner {
             )
 
             GoalCategory.DRAFT_MESSAGE -> listOf(
-                TaskStep("draft_message", StepType.DRAFT_MESSAGE, "Open draft message composer", payload = goal.targetValue),
-                TaskStep("confirm_send", StepType.REQUEST_CONFIRMATION, "Confirm before sending message", riskLevel = RiskLevel.CONFIRM_REQUIRED)
+                TaskStep(
+                    "draft_message",
+                    StepType.DRAFT_MESSAGE,
+                    "Open ${goal.targetApp ?: "message"} draft composer",
+                    targetApp = goal.targetApp,
+                    payload = goal.targetValue
+                ),
+                TaskStep(
+                    "confirm_send",
+                    StepType.REQUEST_CONFIRMATION,
+                    "Confirm before sending message",
+                    targetApp = goal.targetApp,
+                    payload = goal.targetValue,
+                    riskLevel = RiskLevel.CONFIRM_REQUIRED
+                )
             )
 
             GoalCategory.PLACE_CALL -> listOf(
@@ -36,7 +49,22 @@ class TemplateTaskPlanner : TaskPlanner {
             )
 
             GoalCategory.GENERAL_APP_CONTROL -> listOf(
-                TaskStep("autonomous_control", StepType.EXECUTE_AUTONOMOUSLY, "Execute custom command autonomously via local Gemma", payload = goal.text)
+                if (!goal.targetApp.isNullOrBlank()) {
+                    TaskStep(
+                        id = "open_app",
+                        type = StepType.OPEN_APP,
+                        description = "Open ${goal.targetApp}",
+                        targetApp = goal.targetApp,
+                        payload = goal.text
+                    )
+                } else {
+                    TaskStep(
+                        "autonomous_control",
+                        StepType.EXECUTE_AUTONOMOUSLY,
+                        "Ask local Gemma for the next suggested app-control step",
+                        payload = goal.text
+                    )
+                }
             )
 
             GoalCategory.UNSUPPORTED -> listOf(

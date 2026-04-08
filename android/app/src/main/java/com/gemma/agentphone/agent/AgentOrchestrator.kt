@@ -16,6 +16,7 @@ class AgentOrchestrator(
             "Primary model: ${settings.activeModel}",
             "Fallback provider: ${settings.fallbackProvider}",
             "Fallback model: ${settings.fallbackModel}",
+            "Custom prompt: ${if (settings.customPrompt.isBlank()) "not set" else "configured"}",
             "Relay endpoint: ${settings.relayEndpoint}",
             "Autonomy mode: ${settings.autonomyMode}",
             "Cloud fallback enabled: ${settings.allowCloudFallback}"

@@ -85,6 +85,7 @@ enum class ExecutionStrategy {
 }
 
 enum class StepType {
+    OPEN_APP,
     OPEN_SYSTEM_SETTINGS,
     OPEN_MAPS,
     OPEN_BROWSER_SEARCH,
