@@ -12,6 +12,7 @@ class ModelDownloadManager(private val context: Context) {
     companion object {
         private const val PREFS_NAME = "model_download"
         private const val KEY_ACTIVE_DOWNLOAD_ID = "active_download_id"
+        private const val KEY_LAST_ERROR_MESSAGE = "last_error_message"
     }
 
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -32,7 +33,17 @@ class ModelDownloadManager(private val context: Context) {
         prefs.edit().remove(KEY_ACTIVE_DOWNLOAD_ID).apply()
     }
 
-    fun startDownload(downloadUrl: String): Result<Long> {
+    private fun clearLastError() {
+        prefs.edit().remove(KEY_LAST_ERROR_MESSAGE).apply()
+    }
+
+    private fun rememberError(message: String) {
+        prefs.edit().putString(KEY_LAST_ERROR_MESSAGE, message).apply()
+    }
+
+    private fun getLastError(): String? = prefs.getString(KEY_LAST_ERROR_MESSAGE, null)
+
+    fun startDownload(downloadUrl: String, huggingFaceToken: String): Result<Long> {
         if (downloadUrl.isBlank() || !URLUtil.isNetworkUrl(downloadUrl)) {
             return Result.failure(IllegalArgumentException("A valid model download URL is required."))
         }
@@ -45,7 +56,13 @@ class ModelDownloadManager(private val context: Context) {
             .setAllowedOverMetered(true)
             .setAllowedOverRoaming(false)
 
+        if (huggingFaceToken.isNotBlank()) {
+            request.addRequestHeader("Authorization", "Bearer ${huggingFaceToken.trim()}")
+        }
+
         return runCatching {
+            getModelFile().delete()
+            clearLastError()
             val id = downloadManager.enqueue(request)
             prefs.edit().putLong(KEY_ACTIVE_DOWNLOAD_ID, id).apply()
             id
@@ -62,6 +79,7 @@ class ModelDownloadManager(private val context: Context) {
                 }
             }
             clearActiveDownload()
+            clearLastError()
             target
         }
     }
@@ -69,15 +87,19 @@ class ModelDownloadManager(private val context: Context) {
     fun getStatus(): ModelDownloadStatus {
         if (isModelDownloaded()) {
             clearActiveDownload()
+            clearLastError()
             return ModelDownloadStatus.Ready(getModelFile())
         }
 
-        val downloadId = getActiveDownloadId() ?: return ModelDownloadStatus.Missing
+        val downloadId = getActiveDownloadId()
+        if (downloadId == null) {
+            return getLastError()?.let(ModelDownloadStatus::Failed) ?: ModelDownloadStatus.Missing
+        }
         val cursor = downloadManager.query(DownloadManager.Query().setFilterById(downloadId))
         cursor.use {
             if (!it.moveToFirst()) {
                 clearActiveDownload()
-                return ModelDownloadStatus.Missing
+                return getLastError()?.let(ModelDownloadStatus::Failed) ?: ModelDownloadStatus.Missing
             }
 
             val status = it.getInt(it.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
@@ -94,16 +116,35 @@ class ModelDownloadManager(private val context: Context) {
                 DownloadManager.STATUS_SUCCESSFUL -> {
                     clearActiveDownload()
                     if (isModelDownloaded()) ModelDownloadStatus.Ready(getModelFile())
-                    else ModelDownloadStatus.Failed("The download finished but the model file was not found.")
+                    else {
+                        val message = "The download finished but the Gemma model file was not found on the device."
+                        rememberError(message)
+                        ModelDownloadStatus.Failed(message)
+                    }
                 }
 
                 DownloadManager.STATUS_FAILED -> {
                     clearActiveDownload()
-                    ModelDownloadStatus.Failed("DownloadManager failed with reason code $reason.")
+                    val message = formatFailureMessage(reason)
+                    rememberError(message)
+                    ModelDownloadStatus.Failed(message)
                 }
 
-                else -> ModelDownloadStatus.Missing
+                else -> getLastError()?.let(ModelDownloadStatus::Failed) ?: ModelDownloadStatus.Missing
             }
+        }
+    }
+
+    private fun formatFailureMessage(reason: Int): String {
+        return when (reason) {
+            401 -> "Gemma download requires Hugging Face access. Accept the model terms, then add a Hugging Face token in settings or import the file manually."
+            DownloadManager.ERROR_HTTP_DATA_ERROR -> "The Gemma download was interrupted while transferring data. Retry on a stable connection or import the file manually."
+            DownloadManager.ERROR_INSUFFICIENT_SPACE -> "The device does not have enough storage space for the Gemma model."
+            DownloadManager.ERROR_TOO_MANY_REDIRECTS -> "The Gemma source redirected too many times. Recheck the model URL in settings."
+            DownloadManager.ERROR_UNHANDLED_HTTP_CODE -> "The Gemma source returned an unexpected HTTP response. Verify the model URL and access permissions."
+            DownloadManager.ERROR_CANNOT_RESUME -> "Android could not resume the Gemma download. Start it again or import the model file."
+            DownloadManager.ERROR_DEVICE_NOT_FOUND -> "Android could not find the storage target for the Gemma model."
+            else -> "Gemma download failed with reason code $reason. Update the model source, add a Hugging Face token, or import the model manually."
         }
     }
 }

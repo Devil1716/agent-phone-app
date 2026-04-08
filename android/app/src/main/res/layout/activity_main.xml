@@ -162,6 +162,15 @@
                     android:text="@string/model_status_missing"
                     android:textSize="13sp" />
 
+                <TextView
+                    android:id="@+id/modelStatusHintText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/onboarding_model_access_hint"
+                    android:textSize="12sp"
+                    android:alpha="0.75" />
+
                 <com.google.android.material.progressindicator.LinearProgressIndicator
                     android:id="@+id/modelDownloadProgressMain"
                     android:layout_width="match_parent"
@@ -196,6 +205,14 @@
                         android:text="@string/model_import_main"
                         style="@style/Widget.GemmaAgent.Button.Outlined" />
                 </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/openModelSourceButtonMain"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="@string/onboarding_model_source_button"
+                    style="@style/Widget.GemmaAgent.Button.Outlined" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

@@ -2,6 +2,7 @@ package com.gemma.agentphone
 
 import android.app.Activity
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -126,6 +127,9 @@ class MainActivity : AppCompatActivity() {
         findViewById<android.view.View>(R.id.importModelButtonMain).setOnClickListener {
             importModelLauncher.launch(arrayOf("*/*"))
         }
+        findViewById<android.view.View>(R.id.openModelSourceButtonMain).setOnClickListener {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(BuildConfig.DEFAULT_MODEL_SOURCE_PAGE_URL)))
+        }
 
         intent?.getStringExtra("prefill_command")?.let { prefill ->
             commandInput.setText(prefill)
@@ -209,7 +213,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun startModelDownload() {
         val settings = AiSettingsRepository(this).load()
-        val result = modelDownloadManager.startDownload(settings.modelDownloadUrl)
+        val result = modelDownloadManager.startDownload(
+            downloadUrl = settings.modelDownloadUrl,
+            huggingFaceToken = settings.huggingFaceToken
+        )
         if (result.isSuccess) {
             Toast.makeText(this, R.string.model_download_started, Toast.LENGTH_SHORT).show()
             refreshModelStatus()
@@ -228,6 +235,7 @@ class MainActivity : AppCompatActivity() {
         val progressIndicator = findViewById<LinearProgressIndicator>(R.id.modelDownloadProgressMain)
         val downloadButton = findViewById<MaterialButton>(R.id.downloadModelButtonMain)
         val importButton = findViewById<MaterialButton>(R.id.importModelButtonMain)
+        val sourceButton = findViewById<MaterialButton>(R.id.openModelSourceButtonMain)
 
         return when (val status = modelDownloadManager.getStatus()) {
             is ModelDownloadStatus.Ready -> {
@@ -235,6 +243,7 @@ class MainActivity : AppCompatActivity() {
                 progressIndicator.visibility = android.view.View.GONE
                 downloadButton.isEnabled = false
                 importButton.isEnabled = true
+                sourceButton.isEnabled = false
                 false
             }
 
@@ -244,16 +253,18 @@ class MainActivity : AppCompatActivity() {
                 progressIndicator.progress = status.progress
                 downloadButton.isEnabled = false
                 importButton.isEnabled = false
+                sourceButton.isEnabled = false
                 modelStatusHandler.removeCallbacks(modelStatusRunnable)
                 modelStatusHandler.postDelayed(modelStatusRunnable, 1_000)
                 true
             }
 
             is ModelDownloadStatus.Failed -> {
-                statusTextView.text = getString(R.string.model_download_failed_state)
+                statusTextView.text = status.message
                 progressIndicator.visibility = android.view.View.GONE
                 downloadButton.isEnabled = true
                 importButton.isEnabled = true
+                sourceButton.isEnabled = true
                 false
             }
 
@@ -262,6 +273,7 @@ class MainActivity : AppCompatActivity() {
                 progressIndicator.visibility = android.view.View.GONE
                 downloadButton.isEnabled = true
                 importButton.isEnabled = true
+                sourceButton.isEnabled = true
                 false
             }
         }

@@ -22,6 +22,7 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var cloudFallbackCheckbox: CheckBox
     private lateinit var relayEndpointInput: EditText
     private lateinit var modelDownloadUrlInput: EditText
+    private lateinit var huggingFaceTokenInput: EditText
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,6 +36,7 @@ class SettingsActivity : AppCompatActivity() {
         cloudFallbackCheckbox = findViewById(R.id.cloudFallbackCheckbox)
         relayEndpointInput = findViewById(R.id.relayEndpointInput)
         modelDownloadUrlInput = findViewById(R.id.modelDownloadUrlInput)
+        huggingFaceTokenInput = findViewById(R.id.huggingFaceTokenInput)
 
         val settingsRepository = AiSettingsRepository(this)
         val settings = settingsRepository.load()
@@ -52,6 +54,7 @@ class SettingsActivity : AppCompatActivity() {
         cloudFallbackCheckbox.isChecked = settings.allowCloudFallback
         relayEndpointInput.setText(settings.relayEndpoint)
         modelDownloadUrlInput.setText(settings.modelDownloadUrl)
+        huggingFaceTokenInput.setText(settings.huggingFaceToken)
 
         updateModelSpinner(modelSpinner, providers, settings.activeProvider, settings.activeModel)
         updateModelSpinner(fallbackModelSpinner, providers, settings.fallbackProvider, settings.fallbackModel)
@@ -77,7 +80,8 @@ class SettingsActivity : AppCompatActivity() {
                 autonomyMode = autonomySpinner.selectedItem.toString(),
                 allowCloudFallback = cloudFallbackCheckbox.isChecked,
                 relayEndpoint = relayEndpointInput.text.toString().trim(),
-                modelDownloadUrl = modelDownloadUrlInput.text.toString().trim()
+                modelDownloadUrl = modelDownloadUrlInput.text.toString().trim(),
+                huggingFaceToken = huggingFaceTokenInput.text.toString().trim()
             )
 
             settingsRepository.save(nextSettings)

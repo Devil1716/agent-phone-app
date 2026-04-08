@@ -8,7 +8,8 @@ data class AiSettings(
     val autonomyMode: String,
     val allowCloudFallback: Boolean,
     val relayEndpoint: String,
-    val modelDownloadUrl: String
+    val modelDownloadUrl: String,
+    val huggingFaceToken: String
 ) {
     companion object {
         fun defaultGemma(): AiSettings {
@@ -20,7 +21,8 @@ data class AiSettings(
                 autonomyMode = "confirmed-action",
                 allowCloudFallback = false,
                 relayEndpoint = "http://192.168.1.2:8080",
-                modelDownloadUrl = com.gemma.agentphone.BuildConfig.DEFAULT_MODEL_DOWNLOAD_URL
+                modelDownloadUrl = com.gemma.agentphone.BuildConfig.DEFAULT_MODEL_DOWNLOAD_URL,
+                huggingFaceToken = ""
             )
         }
     }

@@ -37,6 +37,11 @@ android {
             "\"https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/main/gemma3-1b-it-int4.task?download=true\""
         )
         buildConfigField("String", "DEFAULT_MODEL_FILENAME", "\"gemma3-1b-it-int4.task\"")
+        buildConfigField(
+            "String",
+            "DEFAULT_MODEL_SOURCE_PAGE_URL",
+            "\"https://huggingface.co/litert-community/Gemma3-1B-IT\""
+        )
     }
 
     buildTypes {

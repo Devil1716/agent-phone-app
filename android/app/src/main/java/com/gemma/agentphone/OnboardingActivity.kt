@@ -77,6 +77,10 @@ class OnboardingActivity : AppCompatActivity() {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
 
+        findViewById<MaterialButton>(R.id.openModelSourceButton).setOnClickListener {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(BuildConfig.DEFAULT_MODEL_SOURCE_PAGE_URL)))
+        }
+
         findViewById<MaterialButton>(R.id.getStartedButton).setOnClickListener {
             if (modelDownloadManager.isModelDownloaded()) {
                 completeOnboarding()
@@ -104,7 +108,10 @@ class OnboardingActivity : AppCompatActivity() {
 
     private fun startDownload() {
         val settings = AiSettingsRepository(this).load()
-        val result = modelDownloadManager.startDownload(settings.modelDownloadUrl)
+        val result = modelDownloadManager.startDownload(
+            downloadUrl = settings.modelDownloadUrl,
+            huggingFaceToken = settings.huggingFaceToken
+        )
         if (result.isSuccess) {
             Toast.makeText(this, R.string.model_download_started, Toast.LENGTH_SHORT).show()
             refreshModelState()
@@ -134,9 +141,11 @@ class OnboardingActivity : AppCompatActivity() {
 
     private fun refreshModelState(): Boolean {
         val downloadButton = findViewById<MaterialButton>(R.id.downloadModelButton)
+        val sourceButton = findViewById<MaterialButton>(R.id.openModelSourceButton)
         val progressContainer = findViewById<View>(R.id.downloadProgressContainer)
         val progressBar = findViewById<LinearProgressIndicator>(R.id.modelDownloadProgress)
         val progressLabel = findViewById<TextView>(R.id.modelDownloadStatus)
+        val helperLabel = findViewById<TextView>(R.id.modelAccessHint)
 
         return when (val status = modelDownloadManager.getStatus()) {
             is ModelDownloadStatus.Ready -> {
@@ -145,6 +154,8 @@ class OnboardingActivity : AppCompatActivity() {
                 downloadButton.visibility = View.VISIBLE
                 downloadButton.text = getString(R.string.onboarding_model_ready)
                 downloadButton.isEnabled = false
+                sourceButton.visibility = View.GONE
+                helperLabel.text = getString(R.string.model_status_ready)
                 false
             }
 
@@ -153,6 +164,8 @@ class OnboardingActivity : AppCompatActivity() {
                 progressContainer.visibility = View.VISIBLE
                 progressBar.progress = status.progress
                 progressLabel.text = getString(R.string.onboarding_model_downloading, status.progress)
+                sourceButton.visibility = View.GONE
+                helperLabel.text = getString(R.string.onboarding_model_access_hint)
                 handler.removeCallbacks(statusRunnable)
                 handler.postDelayed(statusRunnable, 1_000)
                 true
@@ -160,10 +173,14 @@ class OnboardingActivity : AppCompatActivity() {
 
             is ModelDownloadStatus.Failed -> {
                 handler.removeCallbacks(statusRunnable)
-                progressContainer.visibility = View.GONE
+                progressContainer.visibility = View.VISIBLE
+                progressBar.progress = 0
+                progressLabel.text = status.message
                 downloadButton.visibility = View.VISIBLE
                 downloadButton.isEnabled = true
                 downloadButton.text = getString(R.string.onboarding_model_download_button)
+                sourceButton.visibility = View.VISIBLE
+                helperLabel.text = getString(R.string.onboarding_model_access_hint)
                 false
             }
 
@@ -173,6 +190,8 @@ class OnboardingActivity : AppCompatActivity() {
                 downloadButton.visibility = View.VISIBLE
                 downloadButton.isEnabled = true
                 downloadButton.text = getString(R.string.onboarding_model_download_button)
+                sourceButton.visibility = View.VISIBLE
+                helperLabel.text = getString(R.string.onboarding_model_access_hint)
                 false
             }
         }

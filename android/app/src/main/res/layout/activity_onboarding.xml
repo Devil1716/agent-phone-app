@@ -159,6 +159,15 @@
                     android:alpha="0.8"
                     android:layout_marginBottom="12dp" />
 
+                <TextView
+                    android:id="@+id/modelAccessHint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:text="@string/onboarding_model_access_hint"
+                    android:textSize="12sp"
+                    android:alpha="0.75" />
+
                 <FrameLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content">
@@ -222,6 +231,14 @@
                         android:text="@string/onboarding_model_open_settings_button"
                         style="@style/Widget.GemmaAgent.Button.Outlined" />
                 </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/openModelSourceButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="@string/onboarding_model_source_button"
+                    style="@style/Widget.GemmaAgent.Button.Outlined" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

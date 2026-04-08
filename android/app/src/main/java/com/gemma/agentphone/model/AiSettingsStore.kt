@@ -13,7 +13,8 @@ class AiSettingsStore(
             autonomyMode = keyValueStore.getString("autonomyMode", defaults.autonomyMode),
             allowCloudFallback = keyValueStore.getBoolean("allowCloudFallback", defaults.allowCloudFallback),
             relayEndpoint = keyValueStore.getString("relayEndpoint", defaults.relayEndpoint),
-            modelDownloadUrl = keyValueStore.getString("modelDownloadUrl", defaults.modelDownloadUrl)
+            modelDownloadUrl = keyValueStore.getString("modelDownloadUrl", defaults.modelDownloadUrl),
+            huggingFaceToken = keyValueStore.getString("huggingFaceToken", defaults.huggingFaceToken)
         )
     }
 
@@ -26,5 +27,6 @@ class AiSettingsStore(
         keyValueStore.putBoolean("allowCloudFallback", settings.allowCloudFallback)
         keyValueStore.putString("relayEndpoint", settings.relayEndpoint)
         keyValueStore.putString("modelDownloadUrl", settings.modelDownloadUrl)
+        keyValueStore.putString("huggingFaceToken", settings.huggingFaceToken)
     }
 }
