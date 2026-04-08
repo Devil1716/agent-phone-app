@@ -10,7 +10,8 @@ class AiSettingsStoreTest {
         val store = AiSettingsStore(keyValueStore)
         val updated = AiSettings.defaultGemma().copy(
             activeProvider = "qwen-local",
-            relayEndpoint = "http://10.0.2.2:8080"
+            relayEndpoint = "http://10.0.2.2:8080",
+            modelDownloadUrl = "https://example.com/model.task"
         )
 
         store.save(updated)
@@ -18,6 +19,7 @@ class AiSettingsStoreTest {
 
         assertThat(restored.activeProvider).isEqualTo("qwen-local")
         assertThat(restored.relayEndpoint).isEqualTo("http://10.0.2.2:8080")
+        assertThat(restored.modelDownloadUrl).isEqualTo("https://example.com/model.task")
     }
 }
 

@@ -1,27 +1,36 @@
 package com.gemma.agentphone.agent
- 
+
+import android.content.Context
+import com.gemma.agentphone.model.AiProvider
 import com.gemma.agentphone.model.AiProviderDescriptor
+import com.gemma.agentphone.model.AiProviderRegistry
+import com.gemma.agentphone.model.AiSettings
+import com.gemma.agentphone.model.HttpAiProvider
 
 class AgentRuntimeFactory {
-    fun createCoordinator(context: android.content.Context, settings: com.gemma.agentphone.model.AiSettings, providerRegistry: com.gemma.agentphone.model.AiProviderRegistry): ExecutionCoordinator {
+    fun createCoordinator(
+        context: Context,
+        settings: AiSettings,
+        providerRegistry: AiProviderRegistry
+    ): ExecutionCoordinator {
         val downloadManager = ModelDownloadManager(context)
         val modelFile = downloadManager.getModelFile()
-        
+
         val primaryProvider = if (modelFile.exists()) {
-             MediaPipeAiProvider(
+            MediaPipeAiProvider(
                 context = context,
                 descriptor = AiProviderDescriptor(
                     id = "gemma-local",
-                    displayName = "Gemma 4 (Real)",
-                    models = listOf("gemma-2b-it-cpu-int4"),
+                    displayName = "Gemma Local Runtime",
+                    models = listOf(settings.activeModel),
                     supportsOffline = true
                 ),
                 modelFile = modelFile
             )
         } else {
-            providerRegistry.resolve(settings.activeProvider) ?: providerRegistry.listProviders().firstOrNull()?.let { providerRegistry.resolve(it.id) }
+            resolveConfiguredProvider(settings, providerRegistry)
         }
-        
+
         return ExecutionCoordinator(
             goalInterpreter = RuleBasedGoalInterpreter(),
             taskPlanner = TemplateTaskPlanner(),
@@ -33,5 +42,20 @@ class AgentRuntimeFactory {
                 AccessibilityExecutor(primaryProvider)
             )
         )
+    }
+
+    private fun resolveConfiguredProvider(
+        settings: AiSettings,
+        providerRegistry: AiProviderRegistry
+    ): AiProvider? {
+        if (settings.activeProvider.startsWith("relay-") && settings.relayEndpoint.isNotBlank()) {
+            val descriptor = providerRegistry.getProvider(settings.activeProvider)
+            if (descriptor != null) {
+                return HttpAiProvider(descriptor, settings.relayEndpoint)
+            }
+        }
+
+        return providerRegistry.resolve(settings.activeProvider)
+            ?: providerRegistry.listProviders().firstOrNull()?.let { providerRegistry.resolve(it.id) }
     }
 }

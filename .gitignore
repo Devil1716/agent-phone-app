@@ -9,3 +9,4 @@ local.properties
 captures/
 docs/emu-*
 .DS_Store
+android/app/*.jks

@@ -54,7 +54,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
-          name: "🚀 ${{ steps.version.outputs.name }}"
+          name: "Gemma Agent Build ${{ steps.version.outputs.name }}"
           body: |
             ## Gemma Agent Phone - Latest Build
 
@@ -62,17 +62,18 @@ jobs:
             **Branch:** ${{ github.ref_name }}
             **Triggered by:** ${{ github.actor }}
 
-            ### 📲 Install
+            ### Install
             Download the APK below and install it on your Android device (Android 9+).
 
             ### What's included
-            - Material Design themed UI with branded colors
+            - Refreshed Material Design UI
             - Voice input support
             - Execution history with tap-to-rerun
             - Confirmation dialogs for risky actions
             - Notification summarization
             - Onboarding with permission setup
-            - Full agent runtime (goal interpretation → task planning → policy → execution)
+            - Local Gemma model download and import
+            - Full agent runtime (goal interpretation -> task planning -> policy -> execution)
 
             ### How to update
             Every push to `main` creates a new release here. Bookmark this page or enable GitHub notifications to get the latest build automatically.
@@ -83,7 +84,7 @@ jobs:
 
       - name: Post download link to summary
         run: |
-          echo "## 📲 APK Download" >> $GITHUB_STEP_SUMMARY
+          echo "## APK Download" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "A new release has been published with the latest APK." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY

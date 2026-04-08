@@ -3,22 +3,33 @@ package com.gemma.agentphone
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.speech.RecognizerIntent
 import android.widget.EditText
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.gemma.agentphone.agent.AgentRuntimeFactory
 import com.gemma.agentphone.agent.AgentOrchestrator
 import com.gemma.agentphone.agent.ExecutionTrace
-import com.gemma.agentphone.agent.IntentSpec
+import com.gemma.agentphone.agent.ModelDownloadManager
+import com.gemma.agentphone.agent.ModelDownloadStatus
 import com.gemma.agentphone.agent.StepStatus
 import com.gemma.agentphone.agent.TraceEntry
+import com.gemma.agentphone.agent.UpdateManager
 import com.gemma.agentphone.model.AiProviderRegistry
 import com.gemma.agentphone.model.AiSettingsRepository
 import com.gemma.agentphone.model.ExecutionHistoryEntry
 import com.gemma.agentphone.model.ExecutionHistoryRepository
 import com.gemma.agentphone.model.SharedPreferencesKeyValueStore
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.progressindicator.LinearProgressIndicator
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
@@ -33,6 +44,17 @@ class MainActivity : AppCompatActivity() {
     private lateinit var traceText: TextView
     private lateinit var commandInput: EditText
     private lateinit var historyRepository: ExecutionHistoryRepository
+    private lateinit var modelDownloadManager: ModelDownloadManager
+    private val modelStatusHandler = Handler(Looper.getMainLooper())
+
+    private val modelStatusRunnable = object : Runnable {
+        override fun run() {
+            val isStillDownloading = refreshModelStatus()
+            if (isStillDownloading) {
+                modelStatusHandler.postDelayed(this, 1_000)
+            }
+        }
+    }
 
     private val speechLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -48,6 +70,26 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private val importModelLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri == null) {
+            return@registerForActivityResult
+        }
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            val result = modelDownloadManager.importModel(uri)
+            withContext(Dispatchers.Main) {
+                if (result.isSuccess) {
+                    Toast.makeText(this@MainActivity, R.string.model_import_success, Toast.LENGTH_SHORT).show()
+                    refreshModelStatus()
+                } else {
+                    Toast.makeText(this@MainActivity, R.string.model_import_failure, Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -57,6 +99,7 @@ class MainActivity : AppCompatActivity() {
                 getSharedPreferences("execution_history", MODE_PRIVATE)
             )
         )
+        modelDownloadManager = ModelDownloadManager(this)
 
         statusText = findViewById(R.id.statusText)
         traceText = findViewById(R.id.traceText)
@@ -77,8 +120,13 @@ class MainActivity : AppCompatActivity() {
         findViewById<android.view.View>(R.id.historyButton).setOnClickListener {
             startActivity(Intent(this, HistoryActivity::class.java))
         }
+        findViewById<android.view.View>(R.id.downloadModelButtonMain).setOnClickListener {
+            startModelDownload()
+        }
+        findViewById<android.view.View>(R.id.importModelButtonMain).setOnClickListener {
+            importModelLauncher.launch(arrayOf("*/*"))
+        }
 
-        // Handle prefilled command from history
         intent?.getStringExtra("prefill_command")?.let { prefill ->
             commandInput.setText(prefill)
         }
@@ -105,25 +153,30 @@ class MainActivity : AppCompatActivity() {
         if (traceText.text.isNullOrBlank()) {
             traceText.text = getString(R.string.trace_idle)
         }
+        refreshModelStatus()
         checkForUpdates()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        modelStatusHandler.removeCallbacks(modelStatusRunnable)
     }
 
     private fun runCommand() {
         val command = commandInput.text.toString()
         if (command.isBlank()) return
 
-        traceText.text = "🤖 Gemma 4 is thinking and analyzing the screen..."
-        val runCmdBtn = findViewById<android.view.View>(R.id.runCommandButton)
-        runCmdBtn.isEnabled = false
+        traceText.text = "Gemma is analyzing the request and screen context..."
+        val runCommandButton = findViewById<android.view.View>(R.id.runCommandButton)
+        runCommandButton.isEnabled = false
 
-        Thread {
+        lifecycleScope.launch(Dispatchers.Default) {
             try {
-                val settings = AiSettingsRepository(this).load()
-                val trace = runtimeFactory.createCoordinator(this, settings, providerRegistry).run(command)
+                val settings = AiSettingsRepository(this@MainActivity).load()
+                val trace = runtimeFactory.createCoordinator(this@MainActivity, settings, providerRegistry).run(command)
 
-                runOnUiThread {
-                    runCmdBtn.isEnabled = true
-                    // Save to history
+                withContext(Dispatchers.Main) {
+                    runCommandButton.isEnabled = true
                     historyRepository.add(
                         ExecutionHistoryEntry(
                             timestampMs = System.currentTimeMillis(),
@@ -140,33 +193,93 @@ class MainActivity : AppCompatActivity() {
                     if (trace.awaitingConfirmation) {
                         showConfirmationDialog(trace)
                     } else {
-                        trace.externalActions.forEach { externalActionLauncher.launch(this, it.spec) }
+                        trace.externalActions.forEach { externalActionLauncher.launch(this@MainActivity, it.spec) }
                     }
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                runOnUiThread {
-                    runCmdBtn.isEnabled = true
-                    traceText.text = "❌ Error running Gemma 4: ${e.localizedMessage ?: "Unknown error"}\n\nCheck if the model is downloaded and your device supports the AI engine."
+            } catch (exception: Exception) {
+                withContext(Dispatchers.Main) {
+                    runCommandButton.isEnabled = true
+                    traceText.text =
+                        "Error running the agent: ${exception.localizedMessage ?: "Unknown error"}\n\n" +
+                        "Check that the local model is ready or that your fallback provider is configured."
                 }
             }
-        }.start()
+        }
+    }
+
+    private fun startModelDownload() {
+        val settings = AiSettingsRepository(this).load()
+        val result = modelDownloadManager.startDownload(settings.modelDownloadUrl)
+        if (result.isSuccess) {
+            Toast.makeText(this, R.string.model_download_started, Toast.LENGTH_SHORT).show()
+            refreshModelStatus()
+        } else {
+            val messageRes = if (settings.modelDownloadUrl.isBlank()) {
+                R.string.model_download_missing_url
+            } else {
+                R.string.model_download_failure
+            }
+            Toast.makeText(this, messageRes, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun refreshModelStatus(): Boolean {
+        val statusTextView = findViewById<TextView>(R.id.modelStatusText)
+        val progressIndicator = findViewById<LinearProgressIndicator>(R.id.modelDownloadProgressMain)
+        val downloadButton = findViewById<MaterialButton>(R.id.downloadModelButtonMain)
+        val importButton = findViewById<MaterialButton>(R.id.importModelButtonMain)
+
+        return when (val status = modelDownloadManager.getStatus()) {
+            is ModelDownloadStatus.Ready -> {
+                statusTextView.text = getString(R.string.model_status_ready)
+                progressIndicator.visibility = android.view.View.GONE
+                downloadButton.isEnabled = false
+                importButton.isEnabled = true
+                false
+            }
+
+            is ModelDownloadStatus.Downloading -> {
+                statusTextView.text = getString(R.string.model_status_downloading, status.progress)
+                progressIndicator.visibility = android.view.View.VISIBLE
+                progressIndicator.progress = status.progress
+                downloadButton.isEnabled = false
+                importButton.isEnabled = false
+                modelStatusHandler.removeCallbacks(modelStatusRunnable)
+                modelStatusHandler.postDelayed(modelStatusRunnable, 1_000)
+                true
+            }
+
+            is ModelDownloadStatus.Failed -> {
+                statusTextView.text = getString(R.string.model_download_failed_state)
+                progressIndicator.visibility = android.view.View.GONE
+                downloadButton.isEnabled = true
+                importButton.isEnabled = true
+                false
+            }
+
+            ModelDownloadStatus.Missing -> {
+                statusTextView.text = getString(R.string.model_status_missing)
+                progressIndicator.visibility = android.view.View.GONE
+                downloadButton.isEnabled = true
+                importButton.isEnabled = true
+                false
+            }
+        }
     }
 
     private fun checkForUpdates() {
-        val updateManager = com.gemma.agentphone.agent.UpdateManager(this)
+        val updateManager = UpdateManager()
         updateManager.checkForUpdates { version, url ->
             runOnUiThread {
                 val updateCard = findViewById<com.google.android.material.card.MaterialCardView>(R.id.updateCard)
                 val updateText = findViewById<TextView>(R.id.updateText)
-                val downloadBtn = findViewById<com.google.android.material.button.MaterialButton>(R.id.downloadUpdateButton)
+                val downloadButton = findViewById<MaterialButton>(R.id.downloadUpdateButton)
 
-                updateText.text = "New Gemma Agent $version Available!"
+                updateText.text = getString(R.string.update_available, version)
+                downloadButton.text = getString(R.string.update_action)
                 updateCard.visibility = android.view.View.VISIBLE
-
-                downloadBtn.setOnClickListener {
-                    val browserIntent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))
-                    startActivity(browserIntent)
+                downloadButton.setOnClickListener {
+                    startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url)))
                 }
             }
         }
@@ -179,11 +292,11 @@ class MainActivity : AppCompatActivity() {
             stepReason = pendingEntry?.detail ?: ""
         )
         dialog.onConfirm = {
-            traceText.append("\n\n✅ User confirmed. Launching external actions.")
+            traceText.append("\n\n[confirmed] User approved the pending action.")
             trace.externalActions.forEach { externalActionLauncher.launch(this, it.spec) }
         }
         dialog.onCancel = {
-            traceText.append("\n\n❌ User canceled execution.")
+            traceText.append("\n\n[canceled] User canceled execution.")
         }
         dialog.show(supportFragmentManager, ConfirmationDialogFragment.TAG)
     }
@@ -192,11 +305,11 @@ class MainActivity : AppCompatActivity() {
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-            putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak a command…")
+            putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak a command...")
         }
         try {
             speechLauncher.launch(intent)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             traceText.text = "Voice input is not available on this device."
         }
     }
@@ -208,24 +321,24 @@ class MainActivity : AppCompatActivity() {
             appendLine("Strategy: ${trace.strategy}")
             appendLine()
             trace.entries.forEach { entry ->
-                appendLine("${statusEmoji(entry)} [${entry.status}] ${entry.description}")
+                appendLine("${statusPrefix(entry)} [${entry.status}] ${entry.description}")
                 appendLine("   Executor: ${entry.executorName}")
                 appendLine("   Detail: ${entry.detail}")
                 appendLine()
             }
             appendLine(trace.finalMessage)
             if (trace.awaitingConfirmation) {
-                appendLine("⏸️ Confirmation required before continuing.")
+                appendLine("[pause] Confirmation required before continuing.")
             }
         }
     }
 
-    private fun statusEmoji(entry: TraceEntry): String {
+    private fun statusPrefix(entry: TraceEntry): String {
         return when (entry.status) {
-            StepStatus.SUCCESS -> "✅"
-            StepStatus.PENDING_CONFIRMATION -> "⏳"
-            StepStatus.BLOCKED -> "🚫"
-            StepStatus.SKIPPED -> "⏭️"
+            StepStatus.SUCCESS -> "[ok]"
+            StepStatus.PENDING_CONFIRMATION -> "[wait]"
+            StepStatus.BLOCKED -> "[blocked]"
+            StepStatus.SKIPPED -> "[skip]"
         }
     }
 }

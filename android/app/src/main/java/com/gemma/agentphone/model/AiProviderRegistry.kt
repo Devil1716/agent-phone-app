@@ -6,7 +6,7 @@ class AiProviderRegistry {
             AiProviderDescriptor(
                 id = "gemma-local",
                 displayName = "Gemma Local",
-                models = listOf("gemma-4-instruct", "gemma-2b-instruct", "gemma-7b-instruct"),
+                models = listOf("gemma-3-1b-it-int4", "gemma-2b-instruct", "gemma-7b-instruct"),
                 supportsOffline = true
             )
         ),

@@ -1,7 +1,10 @@
 package com.gemma.agentphone.agent
 
 import android.content.Context
-import com.gemma.agentphone.model.*
+import com.gemma.agentphone.model.AiProvider
+import com.gemma.agentphone.model.AiProviderDescriptor
+import com.gemma.agentphone.model.AiRequest
+import com.gemma.agentphone.model.AiResponse
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.google.mediapipe.tasks.genai.llminference.LlmInference.LlmInferenceOptions
 import java.io.File
@@ -29,8 +32,8 @@ class MediaPipeAiProvider(
                             .setRandomSeed(42)
                             .build()
                         llmInference = LlmInference.createFromOptions(context, options)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
+                    } catch (exception: Exception) {
+                        exception.printStackTrace()
                     } finally {
                         isInitializing = false
                     }
@@ -43,20 +46,20 @@ class MediaPipeAiProvider(
     override fun infer(request: AiRequest): AiResponse {
         val startTime = System.currentTimeMillis()
         val engine = ensureInitialized()
-        
+
         return if (engine != null) {
             val response = engine.generateResponse(request.prompt)
             AiResponse(
                 providerId = descriptor.id,
                 model = descriptor.models.first(),
-                summary = response ?: "Gemma 4 failed to generate a response.",
+                summary = response ?: "The local Gemma model did not return a response.",
                 latencyMs = System.currentTimeMillis() - startTime
             )
         } else {
             AiResponse(
                 providerId = descriptor.id,
                 model = descriptor.models.first(),
-                summary = "Error: Gemma 4 AI engine is not ready. Is the model downloaded?",
+                summary = "The local Gemma runtime is not ready yet. Download or import the model first.",
                 latencyMs = System.currentTimeMillis() - startTime
             )
         }

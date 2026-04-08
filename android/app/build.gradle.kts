@@ -6,25 +6,18 @@ plugins {
 android {
     namespace = "com.gemma.agentphone"
     compileSdk = 34
+    val hasReleaseSigning = !System.getenv("ANDROID_KEYSTORE_PATH").isNullOrBlank() &&
+        !System.getenv("ANDROID_KEYSTORE_PASSWORD").isNullOrBlank() &&
+        !System.getenv("ANDROID_KEY_ALIAS").isNullOrBlank() &&
+        !System.getenv("ANDROID_KEY_PASSWORD").isNullOrBlank()
 
     signingConfigs {
         create("release") {
-            val keystorePath = System.getenv("ANDROID_KEYSTORE_PATH")
-            val keystoreFile = if (!keystorePath.isNullOrBlank()) file(keystorePath) else null
-            if (keystoreFile != null && keystoreFile.exists()) {
-                storeFile = keystoreFile
+            if (hasReleaseSigning) {
+                storeFile = file(System.getenv("ANDROID_KEYSTORE_PATH"))
                 storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
                 keyAlias = System.getenv("ANDROID_KEY_ALIAS")
                 keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
-            } else {
-                // Fallback for CI builds without secrets
-                val localJks = file("release.jks")
-                if (localJks.exists()) {
-                    storeFile = localJks
-                    storePassword = "gemma123"
-                    keyAlias = "gemma"
-                    keyPassword = "gemma123"
-                }
             }
         }
     }
@@ -36,6 +29,14 @@ android {
         versionCode = 1
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "APP_REPO_OWNER", "\"Devil1716\"")
+        buildConfigField("String", "APP_REPO_NAME", "\"agent-phone-app\"")
+        buildConfigField(
+            "String",
+            "DEFAULT_MODEL_DOWNLOAD_URL",
+            "\"https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/main/gemma3-1b-it-int4.task?download=true\""
+        )
+        buildConfigField("String", "DEFAULT_MODEL_FILENAME", "\"gemma3-1b-it-int4.task\"")
     }
 
     buildTypes {
@@ -48,7 +49,9 @@ android {
             initWith(getByName("release"))
             applicationIdSuffix = ".alpha"
             versionNameSuffix = "-alpha"
-            signingConfig = signingConfigs.getByName("release")
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             isDebuggable = false
         }
 
@@ -58,7 +61,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("release")
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 

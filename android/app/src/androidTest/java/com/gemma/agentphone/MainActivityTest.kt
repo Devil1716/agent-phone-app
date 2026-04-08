@@ -25,7 +25,7 @@ class MainActivityTest {
             activity.findViewById<Button>(R.id.runCommandButton).performClick()
         }
 
-        // Wait for the background thread to complete (Gemma thinking...)
+        // Wait for the background work to complete.
         var trace = ""
         val startTime = System.currentTimeMillis()
         while (System.currentTimeMillis() - startTime < 10000) {
@@ -39,10 +39,10 @@ class MainActivityTest {
         }
 
         assertThat(trace).contains("Goal: open Spotify")
-        // In CI/Emulators, Gemma 4 may fail to initialize due to hardware limits.
-        // We accept either the success message OR the error message I added in the try-catch.
+        // In CI/emulators, the local runtime may not be ready due to hardware limits.
+        // We accept either the success message or the guarded runtime error.
         val isSuccessful = trace.contains("Execution plan prepared successfully.")
-        val isAiError = trace.contains("Error running Gemma 4") || trace.contains("Gemma 4 AI engine is not ready")
+        val isAiError = trace.contains("Error running the agent") || trace.contains("local Gemma runtime is not ready")
 
         assertThat(isSuccessful || isAiError).isTrue()
         assertThat(trace).contains("Strategy: AUTONOMOUS")

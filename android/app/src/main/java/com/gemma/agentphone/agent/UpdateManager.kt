@@ -1,35 +1,45 @@
 package com.gemma.agentphone.agent
 
-import android.content.Context
 import android.util.Log
 import com.gemma.agentphone.BuildConfig
-import okhttp3.*
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
 import org.json.JSONObject
 import java.io.IOException
 
-class UpdateManager(private val context: Context) {
+class UpdateManager {
 
     private val client = OkHttpClient()
-    private val repoUrl = "https://api.github.com/repos/DaRkAngeL/agent-phone-app/releases/latest" // Placeholder repo
+    private val repoUrl =
+        "https://api.github.com/repos/${BuildConfig.APP_REPO_OWNER}/${BuildConfig.APP_REPO_NAME}/releases/latest"
 
     fun checkForUpdates(onUpdateFound: (version: String, url: String) -> Unit) {
         val request = Request.Builder()
             .url(repoUrl)
+            .header("Accept", "application/vnd.github+json")
             .build()
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                Log.e("UpdateManager", "Failed to check for updates", e)
+                Log.w("UpdateManager", "Failed to check for updates", e)
             }
 
             override fun onResponse(call: Call, response: Response) {
-                if (response.isSuccessful) {
-                    val body = response.body?.string() ?: return
+                response.use {
+                    if (!it.isSuccessful) {
+                        Log.w("UpdateManager", "Unexpected update response: ${it.code}")
+                        return
+                    }
+
+                    val body = it.body?.string().orEmpty()
                     val json = JSONObject(body)
-                    val latestVersion = json.optString("tag_name", "0.0.0")
+                    val latestVersion = json.optString("tag_name", "")
                     val downloadUrl = json.optString("html_url", "")
 
-                    if (isNewerVersion(latestVersion)) {
+                    if (latestVersion.isNotBlank() && downloadUrl.isNotBlank() && isNewerVersion(latestVersion)) {
                         onUpdateFound(latestVersion, downloadUrl)
                     }
                 }
@@ -38,8 +48,25 @@ class UpdateManager(private val context: Context) {
     }
 
     private fun isNewerVersion(latest: String): Boolean {
-        val current = BuildConfig.VERSION_NAME
-        // Simple string comparison for alpha/beta logic or semver check
-        return latest > current 
+        val latestParts = normalizeVersion(latest)
+        val currentParts = normalizeVersion(BuildConfig.VERSION_NAME)
+        val maxSize = maxOf(latestParts.size, currentParts.size)
+
+        for (index in 0 until maxSize) {
+            val latestValue = latestParts.getOrElse(index) { 0 }
+            val currentValue = currentParts.getOrElse(index) { 0 }
+            if (latestValue != currentValue) {
+                return latestValue > currentValue
+            }
+        }
+        return false
+    }
+
+    private fun normalizeVersion(raw: String): List<Int> {
+        return raw
+            .trim()
+            .removePrefix("v")
+            .split('.', '-', '_')
+            .mapNotNull { token -> token.toIntOrNull() }
     }
 }

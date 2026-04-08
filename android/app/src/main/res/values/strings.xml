@@ -5,7 +5,7 @@
     <string name="main_summary">Open-source-first Android agent app focused on local Gemma with fast-path app control and relay-backed recovery.</string>
     <string name="open_settings">Open Agent Settings</string>
     <string name="settings_title">Agent Settings</string>
-    <string name="settings_summary">Choose local providers, relay fallback, and autonomy defaults for the fast and slow execution paths.</string>
+    <string name="settings_summary">Choose local providers, a relay fallback, and the model source used for on-device Gemma.</string>
     <string name="provider_label">Primary provider</string>
     <string name="model_label">Primary model</string>
     <string name="fallback_provider_label">Fallback provider</string>
@@ -15,28 +15,45 @@
     <string name="save_settings">Save Settings</string>
     <string name="relay_endpoint_label">Relay endpoint</string>
     <string name="relay_endpoint_hint">http://192.168.1.2:8080</string>
+    <string name="model_download_url_label">Model download URL</string>
+    <string name="model_download_url_hint">https://huggingface.co/.../gemma3-1b-it-int4.task?download=true</string>
     <string name="command_hint">Try: open Wi-Fi settings, search the web for Gemma, play lo-fi music, or message Rahul I am late.</string>
     <string name="run_command">Run Command</string>
     <string name="stop_command">Stop</string>
     <string name="execution_trace">Execution Trace</string>
     <string name="trace_idle">No command has been run yet.</string>
-
-    <!-- New strings -->
     <string name="status_label">Agent Status</string>
     <string name="voice_input">Voice input</string>
     <string name="history_label">Execution History</string>
     <string name="history_title">Execution History</string>
     <string name="history_empty">No commands have been run yet.</string>
+    <string name="history_clear">Clear History</string>
     <string name="primary_section">Primary Provider</string>
     <string name="fallback_section">Fallback Provider</string>
     <string name="runtime_section">Runtime Configuration</string>
+    <string name="model_section">Local Model</string>
+    <string name="model_status_label">Local Gemma status</string>
+    <string name="model_status_ready">Local Gemma model is ready on this device.</string>
+    <string name="model_status_missing">No local Gemma model found. Download or import one to enable offline execution.</string>
+    <string name="model_status_downloading">Downloading local Gemma model: %1$d%%</string>
+    <string name="model_download_main">Download Gemma</string>
+    <string name="model_import_main">Import Model</string>
+    <string name="model_manage_settings">Manage Model Source</string>
+    <string name="model_download_started">Gemma download started in the background.</string>
+    <string name="model_import_success">Gemma model imported successfully.</string>
+    <string name="model_import_failure">Unable to import the selected model file.</string>
+    <string name="model_download_failure">Unable to start the Gemma download. Check the model URL in settings.</string>
+    <string name="model_download_complete">Gemma model download completed.</string>
+    <string name="model_download_missing_url">Set a valid model download URL in settings before downloading.</string>
+    <string name="model_pending_download">Gemma model download is still in progress.</string>
+    <string name="model_download_failed_state">Gemma download failed. Update the model URL or import a model file manually.</string>
+    <string name="update_available">New build available: %1$s</string>
+    <string name="update_action">Open Release</string>
 
-    <!-- Confirmation dialog -->
     <string name="confirmation_title">Confirm Action</string>
     <string name="confirmation_proceed">Proceed</string>
     <string name="confirmation_cancel">Cancel</string>
 
-    <!-- Onboarding -->
     <string name="onboarding_title">Welcome to Gemma Agent</string>
     <string name="onboarding_subtitle">Set up the permissions your agent needs to work.</string>
     <string name="onboarding_accessibility_title">Accessibility Service</string>
@@ -47,14 +64,14 @@
     <string name="onboarding_notification_button">Enable Notification Access</string>
     <string name="onboarding_get_started">Get Started</string>
     <string name="onboarding_skip">Skip for Now</string>
+    <string name="onboarding_model_title">Local Gemma Model</string>
+    <string name="onboarding_model_desc">Download or import a Gemma task bundle so the agent can run locally on your phone.</string>
+    <string name="onboarding_model_download_button">Download Gemma Model</string>
+    <string name="onboarding_model_import_button">Import Gemma File</string>
+    <string name="onboarding_model_open_settings_button">Edit Model Source</string>
+    <string name="onboarding_model_downloading">Downloading local model: %1$d%%</string>
+    <string name="onboarding_model_ready">Local model ready</string>
+    <string name="onboarding_model_waiting">Waiting for model download to finish.</string>
 
-    <!-- Onboarding Model Download -->
-    <string name="onboarding_model_title">Gemma 4 Intelligence</string>
-    <string name="onboarding_model_desc">Download the 1.3GB AI model to your phone for 100% offline, private intelligence.</string>
-    <string name="onboarding_model_download_button">Download Model (1.3GB)</string>
-    <string name="onboarding_model_downloading">Downloading model: %1$d%%</string>
-    <string name="onboarding_model_ready">Model Ready</string>
-
-    <!-- Notification listener -->
     <string name="notification_listener_label">Gemma Agent Notification Listener</string>
 </resources>
