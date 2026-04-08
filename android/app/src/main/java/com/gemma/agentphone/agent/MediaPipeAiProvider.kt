@@ -27,9 +27,7 @@ class MediaPipeAiProvider(
                         val options = LlmInferenceOptions.builder()
                             .setModelPath(modelFile.absolutePath)
                             .setMaxTokens(512)
-                            .setTopK(40)
-                            .setTemperature(0.8f)
-                            .setRandomSeed(42)
+                            .setMaxTopK(40)
                             .build()
                         llmInference = LlmInference.createFromOptions(context, options)
                     } catch (exception: Exception) {
