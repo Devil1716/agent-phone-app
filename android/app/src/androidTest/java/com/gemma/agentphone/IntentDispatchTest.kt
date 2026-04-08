@@ -1,58 +1,60 @@
 package com.gemma.agentphone
 
 import android.app.Activity
-import android.app.Instrumentation
-import android.content.Intent
 import android.provider.Settings
-import androidx.test.espresso.Espresso.onView
-import androidx.test.espresso.action.ViewActions.click
-import androidx.test.espresso.action.ViewActions.replaceText
-import androidx.test.espresso.intent.Intents
-import androidx.test.espresso.intent.matcher.IntentMatchers.hasAction
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
-import androidx.test.espresso.intent.Intents.intended
-import androidx.test.espresso.intent.Intents.intending
-import androidx.test.espresso.matcher.ViewMatchers.withId
-import org.hamcrest.Matchers.allOf
+import androidx.test.platform.app.InstrumentationRegistry
+import android.widget.Button
+import android.widget.EditText
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import com.google.common.truth.Truth.assertThat
 
 @RunWith(AndroidJUnit4::class)
 @LargeTest
 class IntentDispatchTest {
+    private val launchedActions = mutableListOf<String>()
+
     @get:Rule
     val activityRule = ActivityScenarioRule(MainActivity::class.java)
 
     @Before
     fun setUp() {
-        Intents.init()
-        intending(hasAction(Intent.ACTION_VIEW)).respondWith(Instrumentation.ActivityResult(Activity.RESULT_OK, Intent()))
-        intending(hasAction(Settings.ACTION_WIFI_SETTINGS)).respondWith(Instrumentation.ActivityResult(Activity.RESULT_OK, Intent()))
+        MainActivity.externalActionLauncher = ExternalActionLauncher { _: Activity, spec ->
+            launchedActions += spec.action
+        }
     }
 
     @After
     fun tearDown() {
-        Intents.release()
+        MainActivity.externalActionLauncher = DefaultExternalActionLauncher
+        launchedActions.clear()
     }
 
     @Test
     fun dispatchesWifiSettingsIntent() {
-        onView(withId(R.id.commandInput)).perform(replaceText("open Wi-Fi settings"))
-        onView(withId(R.id.runCommandButton)).perform(click())
+        activityRule.scenario.onActivity { activity ->
+            activity.findViewById<EditText>(R.id.commandInput).setText("open Wi-Fi settings")
+            activity.findViewById<Button>(R.id.runCommandButton).performClick()
+        }
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
 
-        intended(hasAction(Settings.ACTION_WIFI_SETTINGS))
+        assertThat(launchedActions).contains(Settings.ACTION_WIFI_SETTINGS)
     }
 
     @Test
     fun dispatchesBrowserSearchIntent() {
-        onView(withId(R.id.commandInput)).perform(replaceText("search the web for Gemma"))
-        onView(withId(R.id.runCommandButton)).perform(click())
+        activityRule.scenario.onActivity { activity ->
+            activity.findViewById<EditText>(R.id.commandInput).setText("search the web for Gemma")
+            activity.findViewById<Button>(R.id.runCommandButton).performClick()
+        }
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
 
-        intended(allOf(hasAction(Intent.ACTION_VIEW)))
+        assertThat(launchedActions).contains(android.content.Intent.ACTION_VIEW)
     }
 }

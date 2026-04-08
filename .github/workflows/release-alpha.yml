@@ -9,6 +9,9 @@ on:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
+permissions:
+  contents: write
+
 jobs:
   build-alpha:
     runs-on: ubuntu-latest
@@ -24,14 +27,6 @@ jobs:
           java-version: "17"
           cache: gradle
 
-      - name: Decode Android keystore
-        shell: bash
-        run: |
-          if [ -z "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
-            echo "Missing ANDROID_KEYSTORE_BASE64 secret"
-            exit 1
-          fi
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > "$RUNNER_TEMP/release.keystore"
 
       - name: Build signed alpha artifacts
         working-directory: android

@@ -41,7 +41,7 @@ class RuleBasedGoalInterpreter : GoalInterpreter {
                 UserGoal(input, GoalCategory.GENERAL_APP_CONTROL, targetApp = input.substringAfter("open ").trim(), requiresFastPath = false)
             }
 
-            else -> UserGoal(input, GoalCategory.UNSUPPORTED, requiresFastPath = false)
+            else -> UserGoal(input, GoalCategory.GENERAL_APP_CONTROL, requiresFastPath = false)
         }
     }
 }

@@ -25,23 +25,23 @@ Gemma Agent Phone App is a public Android project for building a general app-con
 
 ## Project Layout
 
-- [android](C:\Users\DaRkAngeL\Desktop\os\repos\agent-phone-app\android): Android application and tests
-- [docs/ARCHITECTURE.md](C:\Users\DaRkAngeL\Desktop\os\repos\agent-phone-app\docs\ARCHITECTURE.md): runtime architecture
-- [docs/AUTOMATION_SAFETY.md](C:\Users\DaRkAngeL\Desktop\os\repos\agent-phone-app\docs\AUTOMATION_SAFETY.md): safety and confirmation rules
-- [docs/MODEL_PROVIDERS.md](C:\Users\DaRkAngeL\Desktop\os\repos\agent-phone-app\docs\MODEL_PROVIDERS.md): model/provider strategy
-- [docs/DEVICE_MATRIX.md](C:\Users\DaRkAngeL\Desktop\os\repos\agent-phone-app\docs\DEVICE_MATRIX.md): compatibility and release gate devices
-- [docs/PHYSICAL_DEVICE_CHECKLIST.md](C:\Users\DaRkAngeL\Desktop\os\repos\agent-phone-app\docs\PHYSICAL_DEVICE_CHECKLIST.md): manual release checklist
-- [docs/RELEASE_PROCESS.md](C:\Users\DaRkAngeL\Desktop\os\repos\agent-phone-app\docs\RELEASE_PROCESS.md): alpha and tagged release flow
-- [docs/LABELS_AND_MILESTONES.md](C:\Users\DaRkAngeL\Desktop\os\repos\agent-phone-app\docs\LABELS_AND_MILESTONES.md): issue/PR triage conventions
+- [android](android): Android application and tests
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): runtime architecture
+- [docs/AUTOMATION_SAFETY.md](docs/AUTOMATION_SAFETY.md): safety and confirmation rules
+- [docs/MODEL_PROVIDERS.md](docs/MODEL_PROVIDERS.md): model/provider strategy
+- [docs/DEVICE_MATRIX.md](docs/DEVICE_MATRIX.md): compatibility and release gate devices
+- [docs/PHYSICAL_DEVICE_CHECKLIST.md](docs/PHYSICAL_DEVICE_CHECKLIST.md): manual release checklist
+- [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md): alpha and tagged release flow
+- [docs/LABELS_AND_MILESTONES.md](docs/LABELS_AND_MILESTONES.md): issue/PR triage conventions
 
 ## CI/CD
 
 The app repo uses a multi-stage workflow set:
 
-- [ci.yml](C:\Users\DaRkAngeL\Desktop\os\repos\agent-phone-app\.github\workflows\ci.yml): lint, unit tests, build
-- [emulator.yml](C:\Users\DaRkAngeL\Desktop\os\repos\agent-phone-app\.github\workflows\emulator.yml): emulator instrumentation tests
-- [dependency-scan.yml](C:\Users\DaRkAngeL\Desktop\os\repos\agent-phone-app\.github\workflows\dependency-scan.yml): dependency review and CodeQL
-- [release-alpha.yml](C:\Users\DaRkAngeL\Desktop\os\repos\agent-phone-app\.github\workflows\release-alpha.yml): signed alpha builds and tagged releases
+- [ci.yml](.github/workflows/ci.yml): lint, unit tests, build
+- [emulator.yml](.github/workflows/emulator.yml): emulator instrumentation tests
+- [dependency-scan.yml](.github/workflows/dependency-scan.yml): dependency review and CodeQL
+- [release-alpha.yml](.github/workflows/release-alpha.yml): signed alpha builds and tagged releases
 
 ## Local Setup
 
@@ -61,4 +61,4 @@ The current codebase contains:
 
 ## Contributing
 
-See [CONTRIBUTING.md](C:\Users\DaRkAngeL\Desktop\os\repos\agent-phone-app\CONTRIBUTING.md) before opening a pull request.
+See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.

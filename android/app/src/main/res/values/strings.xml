@@ -20,4 +20,41 @@
     <string name="stop_command">Stop</string>
     <string name="execution_trace">Execution Trace</string>
     <string name="trace_idle">No command has been run yet.</string>
+
+    <!-- New strings -->
+    <string name="status_label">Agent Status</string>
+    <string name="voice_input">Voice input</string>
+    <string name="history_label">Execution History</string>
+    <string name="history_title">Execution History</string>
+    <string name="history_empty">No commands have been run yet.</string>
+    <string name="primary_section">Primary Provider</string>
+    <string name="fallback_section">Fallback Provider</string>
+    <string name="runtime_section">Runtime Configuration</string>
+
+    <!-- Confirmation dialog -->
+    <string name="confirmation_title">Confirm Action</string>
+    <string name="confirmation_proceed">Proceed</string>
+    <string name="confirmation_cancel">Cancel</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_title">Welcome to Gemma Agent</string>
+    <string name="onboarding_subtitle">Set up the permissions your agent needs to work.</string>
+    <string name="onboarding_accessibility_title">Accessibility Service</string>
+    <string name="onboarding_accessibility_desc">Required for reading screens and performing actions in other apps.</string>
+    <string name="onboarding_accessibility_button">Enable Accessibility</string>
+    <string name="onboarding_notification_title">Notification Access</string>
+    <string name="onboarding_notification_desc">Required for summarizing your notifications.</string>
+    <string name="onboarding_notification_button">Enable Notification Access</string>
+    <string name="onboarding_get_started">Get Started</string>
+    <string name="onboarding_skip">Skip for Now</string>
+
+    <!-- Onboarding Model Download -->
+    <string name="onboarding_model_title">Gemma 4 Intelligence</string>
+    <string name="onboarding_model_desc">Download the 1.3GB AI model to your phone for 100% offline, private intelligence.</string>
+    <string name="onboarding_model_download_button">Download Model (1.3GB)</string>
+    <string name="onboarding_model_downloading">Downloading model: %1$d%%</string>
+    <string name="onboarding_model_ready">Model Ready</string>
+
+    <!-- Notification listener -->
+    <string name="notification_listener_label">Gemma Agent Notification Listener</string>
 </resources>
