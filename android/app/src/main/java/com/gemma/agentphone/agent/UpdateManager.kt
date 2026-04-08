@@ -20,8 +20,9 @@ class UpdateManager {
         val request = Request.Builder()
             .url(repoUrl)
             .header("Accept", "application/vnd.github+json")
+            .header("User-Agent", "Gemma-Agent-Phone-App")
             .build()
-
+            // ...
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
                 Log.w("UpdateManager", "Failed to check for updates", e)
@@ -37,7 +38,25 @@ class UpdateManager {
                     val body = it.body?.string().orEmpty()
                     val json = JSONObject(body)
                     val latestVersion = json.optString("tag_name", "")
-                    val downloadUrl = json.optString("html_url", "")
+                    
+                    // Try to find a direct APK download link in assets first
+                    var downloadUrl = ""
+                    val assets = json.optJSONArray("assets")
+                    if (assets != null) {
+                        for (i in 0 until assets.length()) {
+                            val asset = assets.getJSONObject(i)
+                            val name = asset.optString("name", "")
+                            if (name.endsWith(".apk")) {
+                                downloadUrl = asset.optString("browser_download_url", "")
+                                break
+                            }
+                        }
+                    }
+
+                    // Fallback to the release page if no direct APK asset is found
+                    if (downloadUrl.isBlank()) {
+                        downloadUrl = json.optString("html_url", "")
+                    }
 
                     if (latestVersion.isNotBlank() && downloadUrl.isNotBlank() && isNewerVersion(latestVersion)) {
                         onUpdateFound(latestVersion, downloadUrl)

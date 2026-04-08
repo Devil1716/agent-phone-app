@@ -33,10 +33,6 @@ jobs:
         working-directory: android
         run: ./gradlew testDebugUnitTest
 
-      - name: Build debug APK
-        working-directory: android
-        run: ./gradlew assembleDebug
-
       - name: Get version info
         id: version
         run: |
@@ -44,6 +40,10 @@ jobs:
           TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
           echo "tag=build-${TIMESTAMP}-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
           echo "name=Build ${TIMESTAMP} (${SHORT_SHA})" >> "$GITHUB_OUTPUT"
+
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug -PversionName=${{ steps.version.outputs.tag }}
 
       - name: Rename APK with version
         run: |
