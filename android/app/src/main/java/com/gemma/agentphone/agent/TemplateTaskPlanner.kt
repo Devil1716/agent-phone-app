@@ -49,7 +49,14 @@ class TemplateTaskPlanner : TaskPlanner {
             )
 
             GoalCategory.GENERAL_APP_CONTROL -> listOf(
-                if (!goal.targetApp.isNullOrBlank()) {
+                if (shouldUseAutonomousControl(goal)) {
+                    TaskStep(
+                        "autonomous_control",
+                        StepType.EXECUTE_AUTONOMOUSLY,
+                        "Ask local Gemma for the next suggested app-control step",
+                        payload = goal.text
+                    )
+                } else if (!goal.targetApp.isNullOrBlank()) {
                     TaskStep(
                         id = "open_app",
                         type = StepType.OPEN_APP,
@@ -73,5 +80,13 @@ class TemplateTaskPlanner : TaskPlanner {
         }
 
         return TaskPlan(goal.category.defaultStrategy(), steps)
+    }
+
+    private fun shouldUseAutonomousControl(goal: UserGoal): Boolean {
+        val normalized = goal.text.lowercase()
+        val isPlayStoreInstallFlow = (normalized.contains("play store") || normalized.contains("google play")) &&
+            (normalized.contains("download") || normalized.contains("install"))
+        val isMultiActionCommand = normalized.contains(" and ") || normalized.contains(" then ")
+        return isPlayStoreInstallFlow || isMultiActionCommand
     }
 }

@@ -45,5 +45,15 @@ class RuleBasedGoalInterpreterTest {
         val goal = interpreter.interpret("download Spotify from Play Store")
 
         assertThat(goal.category).isEqualTo(GoalCategory.GENERAL_APP_CONTROL)
+        assertThat(goal.targetApp).isEqualTo("play store")
+        assertThat(goal.targetValue).contains("Spotify")
+    }
+
+    @Test
+    fun openCommandExtractsOnlyPrimaryAppTarget() {
+        val goal = interpreter.interpret("open playstore and download subway surfers")
+
+        assertThat(goal.category).isEqualTo(GoalCategory.GENERAL_APP_CONTROL)
+        assertThat(goal.targetApp).contains("playstore")
     }
 }

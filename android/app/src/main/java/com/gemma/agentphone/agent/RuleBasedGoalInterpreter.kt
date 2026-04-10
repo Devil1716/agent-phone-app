@@ -9,7 +9,13 @@ class RuleBasedGoalInterpreter : GoalInterpreter {
 
         return when {
             normalized.contains("play store") || normalized.contains("google play") -> {
-                UserGoal(input, GoalCategory.GENERAL_APP_CONTROL, requiresFastPath = false)
+                UserGoal(
+                    input,
+                    GoalCategory.GENERAL_APP_CONTROL,
+                    targetApp = "play store",
+                    targetValue = extractPlayStoreQuery(input),
+                    requiresFastPath = false
+                )
             }
 
             normalized.contains("wi-fi") || normalized.contains("wifi") -> {
@@ -56,7 +62,12 @@ class RuleBasedGoalInterpreter : GoalInterpreter {
             }
 
             normalized.startsWith("open ") -> {
-                UserGoal(input, GoalCategory.GENERAL_APP_CONTROL, targetApp = input.substringAfter("open ").trim(), requiresFastPath = false)
+                UserGoal(
+                    input,
+                    GoalCategory.GENERAL_APP_CONTROL,
+                    targetApp = extractOpenTarget(input),
+                    requiresFastPath = false
+                )
             }
 
             normalized.matches(Regex("[a-z0-9 ._-]{2,}")) && !normalized.contains(" ") -> {
@@ -84,5 +95,23 @@ class RuleBasedGoalInterpreter : GoalInterpreter {
             trimmed.startsWith("send ", ignoreCase = true) -> trimmed.substringAfter("send ").trim()
             else -> trimmed
         }
+    }
+
+    private fun extractOpenTarget(input: String): String {
+        val openTarget = input.substringAfter("open ", "").trim()
+        if (openTarget.isBlank()) return input.trim()
+        return openTarget
+            .replace(Regex("(?i)\\b(and|then|to)\\b.*$"), "")
+            .replace(Regex("\\s+"), " ")
+            .trim()
+            .ifBlank { openTarget }
+    }
+
+    private fun extractPlayStoreQuery(input: String): String {
+        val query = input
+            .replace(Regex("(?i)open|download|install|from|on|using|the|google play|play store|app"), " ")
+            .replace(Regex("\\s+"), " ")
+            .trim()
+        return query.ifBlank { input.trim() }
     }
 }

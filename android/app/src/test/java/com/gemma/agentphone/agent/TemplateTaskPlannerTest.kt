@@ -30,4 +30,20 @@ class TemplateTaskPlannerTest {
         assertThat(plan.strategy).isEqualTo(ExecutionStrategy.SLOW_PATH)
         assertThat(plan.steps.first().type).isEqualTo(StepType.OPEN_APP)
     }
+
+    @Test
+    fun playStoreDownloadCommandUsesAutonomousStep() {
+        val plan = planner.plan(
+            UserGoal(
+                "open playstore and download subway surfers",
+                GoalCategory.GENERAL_APP_CONTROL,
+                targetApp = "play store",
+                requiresFastPath = false
+            ),
+            observation
+        )
+
+        assertThat(plan.strategy).isEqualTo(ExecutionStrategy.SLOW_PATH)
+        assertThat(plan.steps.first().type).isEqualTo(StepType.EXECUTE_AUTONOMOUSLY)
+    }
 }
