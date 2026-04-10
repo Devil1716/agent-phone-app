@@ -35,8 +35,8 @@ android {
         applicationId = "com.gemma.agentphone"
         minSdk = 28
         targetSdk = 34
-        versionCode = (project.findProperty("versionCode") as String?)?.toInt() ?: 10
-        versionName = (project.findProperty("versionName") as String?) ?: "0.3.8"
+        versionCode = (project.findProperty("versionCode") as String?)?.toInt() ?: 11
+        versionName = (project.findProperty("versionName") as String?) ?: "0.3.9"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "APP_REPO_OWNER", "\"Devil1716\"")
         buildConfigField("String", "APP_REPO_NAME", "\"agent-phone-app\"")
@@ -57,11 +57,11 @@ android {
         debug {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
+            buildConfigField("boolean", "ENABLE_IN_APP_UPDATES", "false")
         }
 
         create("alpha") {
             initWith(getByName("release"))
-            applicationIdSuffix = ".alpha"
             versionNameSuffix = "-alpha"
             signingConfig = if (hasReleaseSigning) {
                 signingConfigs.getByName("release")
@@ -69,6 +69,7 @@ android {
                 signingConfigs.getByName("debug")
             }
             isDebuggable = false
+            buildConfigField("boolean", "ENABLE_IN_APP_UPDATES", "true")
         }
 
         release {
@@ -82,6 +83,7 @@ android {
             } else {
                 signingConfigs.getByName("debug")
             }
+            buildConfigField("boolean", "ENABLE_IN_APP_UPDATES", "true")
         }
     }
 

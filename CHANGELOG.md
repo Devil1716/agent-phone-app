@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.9] - 2026-04-10
+
+### Fixed
+- removed the alpha package-name suffix so signed alpha updates install over the previous signed release channel build
+- disabled in-app updates for debug builds to avoid offering incompatible update packages
+- hardened GitHub release workflows so installable updates are only published when the stable signing secrets are available
+
 ## [0.3.8] - 2026-04-10
 
 ### Added

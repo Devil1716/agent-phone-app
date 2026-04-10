@@ -63,9 +63,14 @@ The current codebase contains:
 
 If you encounter an "**App not installed**" error when downloading the APK from GitHub Releases:
 
-1. **Uninstall the previous version**: GitHub Actions generates a new signing key for each build. Android will not allow you to install an update over a version signed with a different key.
+1. **Remove any old debug or differently signed side-load once**: current published alpha/release updates are signed with a consistent release key, but Android will reject installs over older builds that used a different package name or signing key.
 2. **Check your Android version**: The app requires Android 9 (API 28) or higher.
 3. **Enable "Install from Unknown Sources"**: Ensure your browser or file manager has permission to install APKs.
+
+## Update Channel
+
+- signed GitHub alpha releases now keep the same installable package name as the production channel so future updates do not hit package-name conflicts
+- debug builds use the separate `.debug` package and do not participate in in-app updates
 
 ## Contributing
 

@@ -197,7 +197,7 @@ class MainActivity : AppCompatActivity() {
         }
         refreshModelStatus()
         prewarmLocalModelIfReady()
-        if (!hasCheckedForUpdates) {
+        if (BuildConfig.ENABLE_IN_APP_UPDATES && !hasCheckedForUpdates) {
             hasCheckedForUpdates = true
             checkForUpdates()
         }
