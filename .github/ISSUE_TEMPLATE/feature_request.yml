@@ -1,0 +1,17 @@
+name: Feature request
+description: Suggest a product or developer workflow improvement.
+title: "[Feature]: "
+labels: ["type:feature", "needs:triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or opportunity
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true

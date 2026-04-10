@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary">#FF14532D</color>
+    <color name="primaryDark">#FF0F3D22</color>
+    <color name="primaryVariant">#FF0A2817</color>
+    <color name="onPrimary">#FFFFFFFF</color>
+
+    <color name="secondary">#FF0F766E</color>
+    <color name="secondaryVariant">#FF115E59</color>
+    <color name="onSecondary">#FFFFFFFF</color>
+
+    <color name="background">#FFF6F6F0</color>
+    <color name="surface">#FFFFFFFF</color>
+    <color name="onBackground">#FF1F2937</color>
+    <color name="onSurface">#FF1F2937</color>
+
+    <color name="error">#FFD32F2F</color>
+    <color name="onError">#FFFFFFFF</color>
+
+    <color name="traceSuccess">#FF2E7D32</color>
+    <color name="traceBlocked">#FFC62828</color>
+    <color name="tracePending">#FFF9A825</color>
+    <color name="traceSkipped">#FF757575</color>
+
+    <color name="cardStroke">#2614532D</color>
+    <color name="statusCardBackground">#FFF3FAF6</color>
+    <color name="traceCardBackground">#FFFDFDFC</color>
+    <color name="modelCardBackground">#FFF7FCF8</color>
+</resources>
