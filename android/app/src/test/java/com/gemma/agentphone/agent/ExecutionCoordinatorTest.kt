@@ -105,4 +105,22 @@ class ExecutionCoordinatorTest {
         assertThat(trace.externalActions).hasSize(1)
         assertThat(trace.externalActions[0].spec.data).contains("youtube.com")
     }
+
+    @Test
+    fun executorFailureIsCapturedInsteadOfCrashing() {
+        val crashingExecutor = object : ActionExecutor {
+            override fun canExecute(step: TaskStep): Boolean = true
+
+            override fun execute(step: TaskStep, observation: ScreenObservation): StepResult {
+                throw IllegalStateException("Gemma runtime exploded")
+            }
+        }
+
+        val coordinator = buildCoordinator(executors = listOf(crashingExecutor))
+        val trace = coordinator.run("open Wi-Fi settings")
+
+        assertThat(trace.entries).hasSize(1)
+        assertThat(trace.entries[0].status).isEqualTo(StepStatus.SKIPPED)
+        assertThat(trace.entries[0].detail).contains("Gemma runtime exploded")
+    }
 }

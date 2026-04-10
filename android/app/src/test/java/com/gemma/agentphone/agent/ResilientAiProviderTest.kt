@@ -36,6 +36,32 @@ class ResilientAiProviderTest {
         assertThat(response.summary).doesNotContain("fallback used")
     }
 
+    @Test
+    fun fallsBackWhenPrimaryThrows() {
+        val provider = ResilientAiProvider(
+            primary = throwingProvider("Primary"),
+            fallback = fakeProvider("Fallback", "Handled by relay provider.")
+        )
+
+        val response = provider.infer(sampleRequest())
+
+        assertThat(response.summary).contains("Handled by relay provider.")
+        assertThat(response.summary).contains("fallback used")
+    }
+
+    @Test
+    fun returnsFailureSummaryWhenFallbackThrows() {
+        val provider = ResilientAiProvider(
+            primary = throwingProvider("Primary"),
+            fallback = throwingProvider("Fallback")
+        )
+
+        val response = provider.infer(sampleRequest())
+
+        assertThat(response.summary).contains("Fallback provider failed")
+        assertThat(response.summary).contains("fallback used")
+    }
+
     private fun sampleRequest(): AiRequest {
         return AiRequest(
             prompt = "Open Wi-Fi settings",
@@ -60,6 +86,21 @@ class ResilientAiProviderTest {
                     summary = summary,
                     latencyMs = 10
                 )
+            }
+        }
+    }
+
+    private fun throwingProvider(name: String): AiProvider {
+        return object : AiProvider {
+            override val descriptor = AiProviderDescriptor(
+                id = name.lowercase(),
+                displayName = name,
+                models = listOf("test-model"),
+                supportsOffline = false
+            )
+
+            override fun infer(request: AiRequest): AiResponse {
+                throw IllegalStateException("$name crashed")
             }
         }
     }

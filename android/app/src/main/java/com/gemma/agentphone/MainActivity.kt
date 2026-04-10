@@ -292,25 +292,44 @@ class MainActivity : AppCompatActivity() {
         }
 
         val settings = AiSettingsRepository(this).load()
-        val result = modelDownloadManager.startDownload(
-            downloadUrl = settings.modelDownloadUrl,
-            huggingFaceToken = settings.huggingFaceToken
-        )
-        if (result.isSuccess) {
-            Toast.makeText(this, R.string.model_download_started, Toast.LENGTH_SHORT).show()
-            refreshModelStatus()
-        } else {
-            val messageRes = when (result.exceptionOrNull()?.message) {
-                ModelDownloadManager.ERROR_MODEL_ALREADY_PRESENT -> R.string.model_download_already_present
-                ModelDownloadManager.ERROR_MODEL_DOWNLOAD_ACTIVE -> R.string.model_download_already_running
-                else -> if (settings.modelDownloadUrl.isBlank()) {
-                    R.string.model_download_missing_url
+        lifecycleScope.launch(Dispatchers.IO) {
+            val validationResult = modelDownloadManager.validateDownloadSource(
+                downloadUrl = settings.modelDownloadUrl,
+                huggingFaceToken = settings.huggingFaceToken
+            )
+
+            withContext(Dispatchers.Main) {
+                if (validationResult.isFailure) {
+                    Toast.makeText(
+                        this@MainActivity,
+                        validationResult.exceptionOrNull()?.message ?: getString(R.string.model_download_failure),
+                        Toast.LENGTH_LONG
+                    ).show()
+                    refreshModelStatus()
+                    return@withContext
+                }
+
+                val result = modelDownloadManager.startDownload(
+                    downloadUrl = settings.modelDownloadUrl,
+                    huggingFaceToken = settings.huggingFaceToken
+                )
+                if (result.isSuccess) {
+                    Toast.makeText(this@MainActivity, R.string.model_download_started, Toast.LENGTH_SHORT).show()
+                    refreshModelStatus()
                 } else {
-                    R.string.model_download_failure
+                    val messageRes = when (result.exceptionOrNull()?.message) {
+                        ModelDownloadManager.ERROR_MODEL_ALREADY_PRESENT -> R.string.model_download_already_present
+                        ModelDownloadManager.ERROR_MODEL_DOWNLOAD_ACTIVE -> R.string.model_download_already_running
+                        else -> if (settings.modelDownloadUrl.isBlank()) {
+                            R.string.model_download_missing_url
+                        } else {
+                            R.string.model_download_failure
+                        }
+                    }
+                    Toast.makeText(this@MainActivity, messageRes, Toast.LENGTH_SHORT).show()
+                    refreshModelStatus()
                 }
             }
-            Toast.makeText(this, messageRes, Toast.LENGTH_SHORT).show()
-            refreshModelStatus()
         }
     }
 
@@ -578,7 +597,9 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch(Dispatchers.Default) {
             runCatching {
                 val settings = AiSettingsRepository(this@MainActivity).load()
-                if (settings.activeProvider == "gemma-local") {
+                if (settings.activeProvider == "gemma-local" &&
+                    modelDownloadManager.getStatus() is ModelDownloadStatus.Ready
+                ) {
                     val modelFile = modelDownloadManager.getModelFile()
                     MediaPipeAiProvider.prewarm(this@MainActivity, modelFile)
                 }

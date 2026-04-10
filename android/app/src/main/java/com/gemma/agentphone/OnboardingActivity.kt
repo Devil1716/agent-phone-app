@@ -114,25 +114,44 @@ class OnboardingActivity : AppCompatActivity() {
         }
 
         val settings = AiSettingsRepository(this).load()
-        val result = modelDownloadManager.startDownload(
-            downloadUrl = settings.modelDownloadUrl,
-            huggingFaceToken = settings.huggingFaceToken
-        )
-        if (result.isSuccess) {
-            Toast.makeText(this, R.string.model_download_started, Toast.LENGTH_SHORT).show()
-            refreshModelState()
-        } else {
-            val messageRes = when (result.exceptionOrNull()?.message) {
-                ModelDownloadManager.ERROR_MODEL_ALREADY_PRESENT -> R.string.model_download_already_present
-                ModelDownloadManager.ERROR_MODEL_DOWNLOAD_ACTIVE -> R.string.model_download_already_running
-                else -> if (settings.modelDownloadUrl.isBlank()) {
-                    R.string.model_download_missing_url
+        lifecycleScope.launch(Dispatchers.IO) {
+            val validationResult = modelDownloadManager.validateDownloadSource(
+                downloadUrl = settings.modelDownloadUrl,
+                huggingFaceToken = settings.huggingFaceToken
+            )
+
+            withContext(Dispatchers.Main) {
+                if (validationResult.isFailure) {
+                    Toast.makeText(
+                        this@OnboardingActivity,
+                        validationResult.exceptionOrNull()?.message ?: getString(R.string.model_download_failure),
+                        Toast.LENGTH_LONG
+                    ).show()
+                    refreshModelState()
+                    return@withContext
+                }
+
+                val result = modelDownloadManager.startDownload(
+                    downloadUrl = settings.modelDownloadUrl,
+                    huggingFaceToken = settings.huggingFaceToken
+                )
+                if (result.isSuccess) {
+                    Toast.makeText(this@OnboardingActivity, R.string.model_download_started, Toast.LENGTH_SHORT).show()
+                    refreshModelState()
                 } else {
-                    R.string.model_download_failure
+                    val messageRes = when (result.exceptionOrNull()?.message) {
+                        ModelDownloadManager.ERROR_MODEL_ALREADY_PRESENT -> R.string.model_download_already_present
+                        ModelDownloadManager.ERROR_MODEL_DOWNLOAD_ACTIVE -> R.string.model_download_already_running
+                        else -> if (settings.modelDownloadUrl.isBlank()) {
+                            R.string.model_download_missing_url
+                        } else {
+                            R.string.model_download_failure
+                        }
+                    }
+                    Toast.makeText(this@OnboardingActivity, messageRes, Toast.LENGTH_SHORT).show()
+                    refreshModelState()
                 }
             }
-            Toast.makeText(this, messageRes, Toast.LENGTH_SHORT).show()
-            refreshModelState()
         }
     }
 

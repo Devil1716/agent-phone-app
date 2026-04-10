@@ -5,6 +5,8 @@ import android.content.Context
 import android.net.Uri
 import android.webkit.URLUtil
 import com.gemma.agentphone.BuildConfig
+import java.net.HttpURLConnection
+import java.net.URL
 import java.io.File
 
 class ModelDownloadManager(private val context: Context) {
@@ -16,6 +18,11 @@ class ModelDownloadManager(private val context: Context) {
         const val ERROR_MODEL_ALREADY_PRESENT = "MODEL_ALREADY_PRESENT"
         const val ERROR_MODEL_DOWNLOAD_ACTIVE = "MODEL_DOWNLOAD_ACTIVE"
         private const val TEMP_DOWNLOAD_SUFFIX = ".part"
+        private const val MIN_VALID_MODEL_BYTES = 1_048_576L
+
+        internal fun isUsableModelFile(file: File): Boolean {
+            return file.exists() && file.isFile && file.length() >= MIN_VALID_MODEL_BYTES
+        }
     }
 
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -32,11 +39,41 @@ class ModelDownloadManager(private val context: Context) {
     }
 
     private fun hasUsableModelFile(): Boolean {
-        val file = getModelFile()
-        return file.exists() && file.isFile && file.length() > 0L
+        return isUsableModelFile(getModelFile())
     }
 
     fun isModelDownloaded(): Boolean = hasUsableModelFile()
+
+    fun validateDownloadSource(downloadUrl: String, huggingFaceToken: String): Result<Unit> {
+        if (downloadUrl.isBlank() || !URLUtil.isNetworkUrl(downloadUrl)) {
+            return Result.failure(IllegalArgumentException("A valid model download URL is required."))
+        }
+
+        return runCatching {
+            val connection = (URL(downloadUrl).openConnection() as HttpURLConnection).apply {
+                requestMethod = "HEAD"
+                instanceFollowRedirects = true
+                connectTimeout = 10_000
+                readTimeout = 10_000
+                setRequestProperty("User-Agent", "Gemma-Agent-Phone-App")
+                if (huggingFaceToken.isNotBlank()) {
+                    setRequestProperty("Authorization", "Bearer ${huggingFaceToken.trim()}")
+                }
+            }
+
+            connection.useConnection {
+                val responseCode = it.responseCode
+                if (responseCode !in 200..399) {
+                    throw IllegalStateException(formatHttpValidationMessage(responseCode))
+                }
+
+                val contentLength = it.contentLengthLong
+                if (contentLength in 1 until MIN_VALID_MODEL_BYTES) {
+                    throw IllegalStateException("Gemma model source looks incomplete. Choose a full task bundle before downloading.")
+                }
+            }
+        }
+    }
 
     fun getActiveDownloadId(): Long? {
         val value = prefs.getLong(KEY_ACTIVE_DOWNLOAD_ID, -1L)
@@ -91,6 +128,10 @@ class ModelDownloadManager(private val context: Context) {
         }
 
         return runCatching {
+            val modelFile = getModelFile()
+            if (modelFile.exists() && !isUsableModelFile(modelFile)) {
+                modelFile.delete()
+            }
             getTempDownloadFile().delete()
             clearLastError()
             val id = downloadManager.enqueue(request)
@@ -109,9 +150,17 @@ class ModelDownloadManager(private val context: Context) {
                     input.copyTo(output)
                 }
             }
+            require(isUsableModelFile(target)) {
+                "The selected Gemma model file is incomplete or invalid."
+            }
             clearActiveDownload()
             clearLastError()
             target
+        }.onFailure {
+            val target = getModelFile()
+            if (target.exists() && !isUsableModelFile(target)) {
+                target.delete()
+            }
         }
     }
 
@@ -163,6 +212,13 @@ class ModelDownloadManager(private val context: Context) {
             clearLastError()
             ModelDownloadStatus.Ready(getModelFile())
         } else {
+            val modelFile = getModelFile()
+            if (modelFile.exists()) {
+                val message = "Gemma model file is incomplete or invalid. Download it again or import a valid bundle."
+                rememberError(message)
+                modelFile.delete()
+                return ModelDownloadStatus.Failed(message)
+            }
             val tempFile = getTempDownloadFile()
             if (tempFile.exists() && tempFile.length() > 0L) {
                 val message = "Gemma model download did not complete successfully. Retry the download or import the model file manually."
@@ -184,15 +240,15 @@ class ModelDownloadManager(private val context: Context) {
                     finalFile.delete()
                 }
                 if (tempFile.renameTo(finalFile)) {
-                    finalFile
+                    finalFile.takeIf(::isUsableModelFile)
                 } else {
                     tempFile.copyTo(finalFile, overwrite = true)
                     tempFile.delete()
-                    if (finalFile.exists() && finalFile.length() > 0L) finalFile else null
+                    finalFile.takeIf(::isUsableModelFile)
                 }
             }
 
-            finalFile.exists() && finalFile.length() > 0L -> finalFile
+            isUsableModelFile(finalFile) -> finalFile
             else -> null
         }
     }
@@ -207,6 +263,22 @@ class ModelDownloadManager(private val context: Context) {
             DownloadManager.ERROR_CANNOT_RESUME -> "Android could not resume the Gemma download. Start it again or import the model file."
             DownloadManager.ERROR_DEVICE_NOT_FOUND -> "Android could not find the storage target for the Gemma model."
             else -> "Gemma download failed with reason code $reason. Update the model source, add a Hugging Face token, or import the model manually."
+        }
+    }
+
+    private fun formatHttpValidationMessage(code: Int): String {
+        return when (code) {
+            401, 403 -> "Gemma download requires Hugging Face access. Accept the model terms and add a valid Hugging Face token before downloading."
+            404 -> "Gemma model source was not found. Recheck the download URL in settings."
+            else -> "Gemma download check failed with HTTP $code. Recheck the model URL and access permissions."
+        }
+    }
+
+    private inline fun <T> HttpURLConnection.useConnection(block: (HttpURLConnection) -> T): T {
+        return try {
+            block(this)
+        } finally {
+            disconnect()
         }
     }
 }

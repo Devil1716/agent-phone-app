@@ -41,9 +41,19 @@ class ExecutionCoordinator(
                         continue
                     }
 
-                    val result = executor.execute(step, observation)
-                    result.externalAction?.let(externalActions::add)
-                    entries += TraceEntry(step.id, step.description, result.status, result.executorName, result.message)
+                    try {
+                        val result = executor.execute(step, observation)
+                        result.externalAction?.let(externalActions::add)
+                        entries += TraceEntry(step.id, step.description, result.status, result.executorName, result.message)
+                    } catch (exception: Exception) {
+                        entries += TraceEntry(
+                            step.id,
+                            step.description,
+                            StepStatus.SKIPPED,
+                            executor.javaClass.simpleName,
+                            exception.localizedMessage ?: "Executor failed while preparing this step."
+                        )
+                    }
                 }
             }
         }

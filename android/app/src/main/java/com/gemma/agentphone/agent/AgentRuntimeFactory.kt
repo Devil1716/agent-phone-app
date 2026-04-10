@@ -72,7 +72,7 @@ class AgentRuntimeFactory {
         modelFile: File
     ): AiProvider? {
         return when {
-            providerId == "gemma-local" && modelFile.exists() -> {
+            providerId == "gemma-local" && ModelDownloadManager(context).getStatus() is ModelDownloadStatus.Ready -> {
                 MediaPipeAiProvider(
                     context = context,
                     descriptor = AiProviderDescriptor(
@@ -102,7 +102,14 @@ internal class ResilientAiProvider(
     override val descriptor: AiProviderDescriptor = primary.descriptor
 
     override fun infer(request: AiRequest): AiResponse {
-        val primaryResponse = primary.infer(request)
+        val primaryResponse = runCatching { primary.infer(request) }.getOrElse { throwable ->
+            AiResponse(
+                providerId = primary.descriptor.id,
+                model = primary.descriptor.models.first(),
+                summary = "Error: ${throwable.localizedMessage ?: "Local runtime failed while handling this request."}",
+                latencyMs = 0
+            )
+        }
         val isPrimaryUnavailable = primaryResponse.summary.contains("not ready", ignoreCase = true) ||
             primaryResponse.summary.contains("did not return a response", ignoreCase = true) ||
             primaryResponse.summary.contains("error", ignoreCase = true)
@@ -111,7 +118,14 @@ internal class ResilientAiProvider(
             return primaryResponse
         }
 
-        val fallbackResponse = fallback.infer(request)
+        val fallbackResponse = runCatching { fallback.infer(request) }.getOrElse { throwable ->
+            AiResponse(
+                providerId = fallback.descriptor.id,
+                model = fallback.descriptor.models.first(),
+                summary = "Fallback provider failed: ${throwable.localizedMessage ?: "Unknown error"}",
+                latencyMs = 0
+            )
+        }
         return fallbackResponse.copy(
             summary = "${fallbackResponse.summary}\n(fallback used after local runtime was unavailable)"
         )
