@@ -46,6 +46,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var commandInput: EditText
     private lateinit var historyRepository: ExecutionHistoryRepository
     private lateinit var modelDownloadManager: ModelDownloadManager
+    private var hasCheckedForUpdates = false
     private val modelStatusHandler = Handler(Looper.getMainLooper())
 
     private val modelStatusRunnable = object : Runnable {
@@ -105,6 +106,9 @@ class MainActivity : AppCompatActivity() {
         statusText = findViewById(R.id.statusText)
         traceText = findViewById(R.id.traceText)
         commandInput = findViewById(R.id.commandInput)
+        findViewById<TextView>(R.id.versionText).text =
+            getString(R.string.main_version_format, BuildConfig.VERSION_NAME)
+        findViewById<TextView>(R.id.updateText).text = getString(R.string.update_checking)
 
         findViewById<android.view.View>(R.id.openSettingsButton).setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
@@ -156,7 +160,10 @@ class MainActivity : AppCompatActivity() {
             traceText.text = getString(R.string.trace_idle)
         }
         refreshModelStatus()
-        checkForUpdates()
+        if (!hasCheckedForUpdates) {
+            hasCheckedForUpdates = true
+            checkForUpdates()
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -285,20 +292,40 @@ class MainActivity : AppCompatActivity() {
 
     private fun checkForUpdates() {
         val updateManager = UpdateManager()
-        updateManager.checkForUpdates { version, url ->
-            runOnUiThread {
-                val updateCard = findViewById<com.google.android.material.card.MaterialCardView>(R.id.updateCard)
-                val updateText = findViewById<TextView>(R.id.updateText)
-                val downloadButton = findViewById<MaterialButton>(R.id.downloadUpdateButton)
+        updateManager.checkForUpdates(
+            onUpdateFound = { version, url ->
+                runOnUiThread {
+                    val updateCard = findViewById<com.google.android.material.card.MaterialCardView>(R.id.updateCard)
+                    val updateText = findViewById<TextView>(R.id.updateText)
+                    val downloadButton = findViewById<MaterialButton>(R.id.downloadUpdateButton)
 
-                updateText.text = getString(R.string.update_available, version)
-                downloadButton.text = getString(R.string.update_action)
-                updateCard.visibility = android.view.View.VISIBLE
-                downloadButton.setOnClickListener {
-                    startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url)))
+                    updateText.text = getString(R.string.update_available, version)
+                    downloadButton.text = if (url.endsWith(".apk", ignoreCase = true)) {
+                        getString(R.string.update_action_download_apk)
+                    } else {
+                        getString(R.string.update_action_open_release)
+                    }
+                    updateCard.visibility = android.view.View.VISIBLE
+                    downloadButton.setOnClickListener {
+                        startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url)))
+                    }
+                }
+            },
+            onNoUpdate = {
+                runOnUiThread {
+                    findViewById<TextView>(R.id.updateText).text = getString(R.string.update_up_to_date)
+                    findViewById<com.google.android.material.card.MaterialCardView>(R.id.updateCard).visibility =
+                        android.view.View.VISIBLE
+                }
+            },
+            onError = {
+                runOnUiThread {
+                    findViewById<TextView>(R.id.updateText).text = getString(R.string.update_check_failed)
+                    findViewById<com.google.android.material.card.MaterialCardView>(R.id.updateCard).visibility =
+                        android.view.View.VISIBLE
                 }
             }
-        }
+        )
     }
 
     private fun showConfirmationDialog(trace: ExecutionTrace) {

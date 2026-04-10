@@ -54,6 +54,12 @@
     <string name="model_source_button">Open Gemma source</string>
     <string name="update_available">New build available: %1$s</string>
     <string name="update_action">Open Release</string>
+    <string name="update_checking">Checking for updates...</string>
+    <string name="update_up_to_date">You are on the latest build.</string>
+    <string name="update_check_failed">Unable to check updates right now.</string>
+    <string name="update_action_download_apk">Download APK</string>
+    <string name="update_action_open_release">Open Release</string>
+    <string name="main_version_format">Version: %1$s</string>
 
     <string name="confirmation_title">Confirm Action</string>
     <string name="confirmation_proceed">Proceed</string>
