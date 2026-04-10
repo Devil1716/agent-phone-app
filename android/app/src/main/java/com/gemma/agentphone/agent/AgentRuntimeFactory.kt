@@ -4,8 +4,11 @@ import android.content.Context
 import com.gemma.agentphone.model.AiProvider
 import com.gemma.agentphone.model.AiProviderDescriptor
 import com.gemma.agentphone.model.AiProviderRegistry
+import com.gemma.agentphone.model.AiRequest
+import com.gemma.agentphone.model.AiResponse
 import com.gemma.agentphone.model.AiSettings
 import com.gemma.agentphone.model.HttpAiProvider
+import java.io.File
 
 class AgentRuntimeFactory {
     fun createCoordinator(
@@ -13,22 +16,33 @@ class AgentRuntimeFactory {
         settings: AiSettings,
         providerRegistry: AiProviderRegistry
     ): ExecutionCoordinator {
-        val downloadManager = ModelDownloadManager(context)
-        val modelFile = downloadManager.getModelFile()
-
-        val primaryProvider = if (modelFile.exists()) {
-            MediaPipeAiProvider(
+        val modelFile = ModelDownloadManager(context).getModelFile()
+        val activeProvider = resolveProvider(
+            providerId = settings.activeProvider,
+            modelId = settings.activeModel,
+            settings = settings,
+            providerRegistry = providerRegistry,
+            context = context,
+            modelFile = modelFile
+        )
+        val fallbackProvider = if (settings.allowCloudFallback) {
+            resolveProvider(
+                providerId = settings.fallbackProvider,
+                modelId = settings.fallbackModel,
+                settings = settings,
+                providerRegistry = providerRegistry,
                 context = context,
-                descriptor = AiProviderDescriptor(
-                    id = "gemma-local",
-                    displayName = "Gemma Local Runtime",
-                    models = listOf(settings.activeModel),
-                    supportsOffline = true
-                ),
                 modelFile = modelFile
             )
         } else {
-            resolveConfiguredProvider(settings, providerRegistry)
+            null
+        }
+        val primaryProvider = when {
+            activeProvider != null && fallbackProvider != null ->
+                ResilientAiProvider(activeProvider, fallbackProvider)
+            activeProvider != null -> activeProvider
+            fallbackProvider != null -> fallbackProvider
+            else -> null
         }
 
         return ExecutionCoordinator(
@@ -49,18 +63,57 @@ class AgentRuntimeFactory {
         )
     }
 
-    private fun resolveConfiguredProvider(
+    private fun resolveProvider(
+        providerId: String,
+        modelId: String,
         settings: AiSettings,
-        providerRegistry: AiProviderRegistry
+        providerRegistry: AiProviderRegistry,
+        context: Context,
+        modelFile: File
     ): AiProvider? {
-        if (settings.activeProvider.startsWith("relay-") && settings.relayEndpoint.isNotBlank()) {
-            val descriptor = providerRegistry.getProvider(settings.activeProvider)
-            if (descriptor != null) {
-                return HttpAiProvider(descriptor, settings.relayEndpoint)
+        return when {
+            providerId == "gemma-local" && modelFile.exists() -> {
+                MediaPipeAiProvider(
+                    context = context,
+                    descriptor = AiProviderDescriptor(
+                        id = "gemma-local",
+                        displayName = "Gemma Local Runtime",
+                        models = listOf(modelId),
+                        supportsOffline = true
+                    ),
+                    modelFile = modelFile
+                )
             }
+
+            providerId.startsWith("relay-") && settings.relayEndpoint.isNotBlank() -> {
+                val descriptor = providerRegistry.getProvider(providerId)
+                descriptor?.let { HttpAiProvider(it, settings.relayEndpoint) }
+            }
+
+            else -> providerRegistry.resolve(providerId)
+        }
+    }
+}
+
+internal class ResilientAiProvider(
+    private val primary: AiProvider,
+    private val fallback: AiProvider
+) : AiProvider {
+    override val descriptor: AiProviderDescriptor = primary.descriptor
+
+    override fun infer(request: AiRequest): AiResponse {
+        val primaryResponse = primary.infer(request)
+        val isPrimaryUnavailable = primaryResponse.summary.contains("not ready", ignoreCase = true) ||
+            primaryResponse.summary.contains("did not return a response", ignoreCase = true) ||
+            primaryResponse.summary.contains("error", ignoreCase = true)
+
+        if (!isPrimaryUnavailable) {
+            return primaryResponse
         }
 
-        return providerRegistry.resolve(settings.activeProvider)
-            ?: providerRegistry.listProviders().firstOrNull()?.let { providerRegistry.resolve(it.id) }
+        val fallbackResponse = fallback.infer(request)
+        return fallbackResponse.copy(
+            summary = "${fallbackResponse.summary}\n(fallback used after local runtime was unavailable)"
+        )
     }
 }

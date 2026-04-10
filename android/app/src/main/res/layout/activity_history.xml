@@ -25,7 +25,7 @@
             android:id="@+id/clearHistoryButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Clear"
+            android:text="@string/history_clear"
             style="@style/Widget.GemmaAgent.Button.Outlined"
             app:cornerRadius="12dp" />
     </LinearLayout>
@@ -44,6 +44,8 @@
         android:id="@+id/historyRecycler"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:paddingTop="4dp"
+        android:paddingBottom="16dp"
         android:paddingStart="16dp"
         android:paddingEnd="16dp"
         android:clipToPadding="false" />

@@ -3,7 +3,9 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background">
+    android:background="@color/background"
+    android:fillViewport="true"
+    android:overScrollMode="never">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -47,9 +49,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/primary_section"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/primary"
+                    android:textAppearance="@style/TextAppearance.GemmaAgent.SectionTitle"
                     android:layout_marginBottom="12dp" />
 
                 <TextView
@@ -95,9 +95,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/fallback_section"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/primary"
+                    android:textAppearance="@style/TextAppearance.GemmaAgent.SectionTitle"
                     android:layout_marginBottom="12dp" />
 
                 <TextView
@@ -143,9 +141,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/runtime_section"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/primary"
+                    android:textAppearance="@style/TextAppearance.GemmaAgent.SectionTitle"
                     android:layout_marginBottom="12dp" />
 
                 <TextView
@@ -232,9 +228,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/model_section"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/primary"
+                    android:textAppearance="@style/TextAppearance.GemmaAgent.SectionTitle"
                     android:layout_marginBottom="12dp" />
 
                 <TextView
@@ -287,6 +281,8 @@
             android:id="@+id/saveSettingsButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="8dp"
             android:text="@string/save_settings"
             app:cornerRadius="12dp"
             app:icon="@android:drawable/ic_menu_save" />
