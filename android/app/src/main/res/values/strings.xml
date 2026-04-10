@@ -59,6 +59,12 @@
     <string name="update_check_failed">Unable to check updates right now.</string>
     <string name="update_action_download_apk">Download APK</string>
     <string name="update_action_open_release">Open Release</string>
+    <string name="update_download_title">Downloading app update</string>
+    <string name="update_download_description">Preparing the new APK for installation.</string>
+    <string name="update_download_started">Update download started.</string>
+    <string name="update_download_failed">Update download failed. Please try again.</string>
+    <string name="update_install_failed">Could not start the installer. Open the release page instead.</string>
+    <string name="update_install_permission_needed">Allow installs from this app to continue updating.</string>
     <string name="main_version_format">Version: %1$s</string>
 
     <string name="confirmation_title">Confirm Action</string>

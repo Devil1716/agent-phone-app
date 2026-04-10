@@ -1,17 +1,25 @@
 package com.gemma.agentphone
 
 import android.app.Activity
+import android.app.DownloadManager
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.provider.Settings
 import android.speech.RecognizerIntent
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
 import com.gemma.agentphone.agent.AgentRuntimeFactory
 import com.gemma.agentphone.agent.AgentOrchestrator
@@ -31,6 +39,7 @@ import com.google.android.material.progressindicator.LinearProgressIndicator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
@@ -46,8 +55,20 @@ class MainActivity : AppCompatActivity() {
     private lateinit var commandInput: EditText
     private lateinit var historyRepository: ExecutionHistoryRepository
     private lateinit var modelDownloadManager: ModelDownloadManager
+    private lateinit var systemDownloadManager: DownloadManager
     private var hasCheckedForUpdates = false
+    private var activeUpdateDownloadId: Long? = null
+    private var pendingUpdateFallbackUrl: String? = null
+    private var awaitingInstallPermissionGrant = false
     private val modelStatusHandler = Handler(Looper.getMainLooper())
+    private val updateDownloadReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action != DownloadManager.ACTION_DOWNLOAD_COMPLETE) return
+            val downloadId = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L)
+            if (downloadId <= 0L || downloadId != activeUpdateDownloadId) return
+            handleUpdateDownloadComplete(downloadId)
+        }
+    }
 
     private val modelStatusRunnable = object : Runnable {
         override fun run() {
@@ -102,6 +123,8 @@ class MainActivity : AppCompatActivity() {
             )
         )
         modelDownloadManager = ModelDownloadManager(this)
+        systemDownloadManager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
+        registerUpdateDownloadReceiver()
 
         statusText = findViewById(R.id.statusText)
         traceText = findViewById(R.id.traceText)
@@ -164,6 +187,7 @@ class MainActivity : AppCompatActivity() {
             hasCheckedForUpdates = true
             checkForUpdates()
         }
+        resumePendingUpdateAfterPermissionGrant()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -175,6 +199,11 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         modelStatusHandler.removeCallbacks(modelStatusRunnable)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        unregisterReceiver(updateDownloadReceiver)
     }
 
     private fun runCommand() {
@@ -308,7 +337,11 @@ class MainActivity : AppCompatActivity() {
                     }
                     updateCard.visibility = android.view.View.VISIBLE
                     downloadButton.setOnClickListener {
-                        startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url)))
+                        if (url.endsWith(".apk", ignoreCase = true)) {
+                            downloadAndInstallUpdate(url)
+                        } else {
+                            startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url)))
+                        }
                     }
                 }
             },
@@ -339,6 +372,99 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         )
+    }
+
+    private fun downloadAndInstallUpdate(apkUrl: String) {
+        pendingUpdateFallbackUrl = apkUrl
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !packageManager.canRequestPackageInstalls()) {
+            awaitingInstallPermissionGrant = true
+            Toast.makeText(this, R.string.update_install_permission_needed, Toast.LENGTH_LONG).show()
+            val intent = Intent(
+                Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                Uri.parse("package:$packageName")
+            )
+            startActivity(intent)
+            return
+        }
+
+        val targetFileName = "gemma-agent-update.apk"
+        val request = DownloadManager.Request(Uri.parse(apkUrl))
+            .setTitle(getString(R.string.update_download_title))
+            .setDescription(getString(R.string.update_download_description))
+            .setMimeType("application/vnd.android.package-archive")
+            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+            .setAllowedOverMetered(true)
+            .setAllowedOverRoaming(true)
+            .setDestinationInExternalFilesDir(this, null, targetFileName)
+
+        activeUpdateDownloadId = systemDownloadManager.enqueue(request)
+        Toast.makeText(this, R.string.update_download_started, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun resumePendingUpdateAfterPermissionGrant() {
+        if (!awaitingInstallPermissionGrant) return
+        awaitingInstallPermissionGrant = false
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !packageManager.canRequestPackageInstalls()) {
+            return
+        }
+        pendingUpdateFallbackUrl?.let { downloadAndInstallUpdate(it) }
+    }
+
+    private fun registerUpdateDownloadReceiver() {
+        val filter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
+        ContextCompat.registerReceiver(
+            this,
+            updateDownloadReceiver,
+            filter,
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
+    }
+
+    private fun handleUpdateDownloadComplete(downloadId: Long) {
+        val cursor = systemDownloadManager.query(DownloadManager.Query().setFilterById(downloadId))
+        cursor.use {
+            if (!it.moveToFirst()) {
+                Toast.makeText(this, R.string.update_download_failed, Toast.LENGTH_LONG).show()
+                return
+            }
+            val status = it.getInt(it.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
+            if (status != DownloadManager.STATUS_SUCCESSFUL) {
+                Toast.makeText(this, R.string.update_download_failed, Toast.LENGTH_LONG).show()
+                return
+            }
+            val localUriString = it.getString(it.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_URI))
+            if (localUriString.isNullOrBlank()) {
+                Toast.makeText(this, R.string.update_download_failed, Toast.LENGTH_LONG).show()
+                return
+            }
+            launchDownloadedApkInstaller(Uri.parse(localUriString))
+        }
+    }
+
+    private fun launchDownloadedApkInstaller(localUri: Uri) {
+        val file = File(localUri.path.orEmpty())
+        if (!file.exists()) {
+            Toast.makeText(this, R.string.update_install_failed, Toast.LENGTH_LONG).show()
+            return
+        }
+        val apkUri = FileProvider.getUriForFile(
+            this,
+            "${BuildConfig.APPLICATION_ID}.fileprovider",
+            file
+        )
+        val installIntent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(apkUri, "application/vnd.android.package-archive")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        try {
+            startActivity(installIntent)
+        } catch (_: Exception) {
+            Toast.makeText(this, R.string.update_install_failed, Toast.LENGTH_LONG).show()
+            pendingUpdateFallbackUrl?.let { fallback ->
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(fallback)))
+            }
+        }
     }
 
     private fun showConfirmationDialog(trace: ExecutionTrace) {
