@@ -44,6 +44,11 @@ import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
     companion object {
+        private const val UPDATE_PREFS = "app_update"
+        private const val KEY_PENDING_UPDATE_URL = "pending_update_url"
+        private const val KEY_ACTIVE_UPDATE_DOWNLOAD_ID = "active_update_download_id"
+        private const val KEY_AWAITING_INSTALL_PERMISSION = "awaiting_install_permission"
+
         @JvmStatic
         var externalActionLauncher: ExternalActionLauncher = DefaultExternalActionLauncher
     }
@@ -56,6 +61,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var historyRepository: ExecutionHistoryRepository
     private lateinit var modelDownloadManager: ModelDownloadManager
     private lateinit var systemDownloadManager: DownloadManager
+    private val updatePrefs by lazy { getSharedPreferences(UPDATE_PREFS, MODE_PRIVATE) }
     private var hasCheckedForUpdates = false
     private var activeUpdateDownloadId: Long? = null
     private var pendingUpdateFallbackUrl: String? = null
@@ -124,6 +130,7 @@ class MainActivity : AppCompatActivity() {
         )
         modelDownloadManager = ModelDownloadManager(this)
         systemDownloadManager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
+        restorePendingUpdateState()
         registerUpdateDownloadReceiver()
 
         statusText = findViewById(R.id.statusText)
@@ -376,8 +383,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun downloadAndInstallUpdate(apkUrl: String) {
         pendingUpdateFallbackUrl = apkUrl
+        updatePrefs.edit().putString(KEY_PENDING_UPDATE_URL, apkUrl).apply()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !packageManager.canRequestPackageInstalls()) {
             awaitingInstallPermissionGrant = true
+            updatePrefs.edit().putBoolean(KEY_AWAITING_INSTALL_PERMISSION, true).apply()
             Toast.makeText(this, R.string.update_install_permission_needed, Toast.LENGTH_LONG).show()
             val intent = Intent(
                 Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
@@ -398,12 +407,17 @@ class MainActivity : AppCompatActivity() {
             .setDestinationInExternalFilesDir(this, null, targetFileName)
 
         activeUpdateDownloadId = systemDownloadManager.enqueue(request)
+        activeUpdateDownloadId?.let { id ->
+            updatePrefs.edit().putLong(KEY_ACTIVE_UPDATE_DOWNLOAD_ID, id).apply()
+        }
+        updatePrefs.edit().putBoolean(KEY_AWAITING_INSTALL_PERMISSION, false).apply()
         Toast.makeText(this, R.string.update_download_started, Toast.LENGTH_SHORT).show()
     }
 
     private fun resumePendingUpdateAfterPermissionGrant() {
         if (!awaitingInstallPermissionGrant) return
         awaitingInstallPermissionGrant = false
+        updatePrefs.edit().putBoolean(KEY_AWAITING_INSTALL_PERMISSION, false).apply()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !packageManager.canRequestPackageInstalls()) {
             return
         }
@@ -430,28 +444,41 @@ class MainActivity : AppCompatActivity() {
             val status = it.getInt(it.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
             if (status != DownloadManager.STATUS_SUCCESSFUL) {
                 Toast.makeText(this, R.string.update_download_failed, Toast.LENGTH_LONG).show()
+                clearPendingUpdateState()
+                return
+            }
+            val downloadedUri = systemDownloadManager.getUriForDownloadedFile(downloadId)
+            if (downloadedUri != null) {
+                clearPendingUpdateState()
+                launchDownloadedApkInstaller(downloadedUri)
                 return
             }
             val localUriString = it.getString(it.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_URI))
             if (localUriString.isNullOrBlank()) {
                 Toast.makeText(this, R.string.update_download_failed, Toast.LENGTH_LONG).show()
+                clearPendingUpdateState()
                 return
             }
+            clearPendingUpdateState()
             launchDownloadedApkInstaller(Uri.parse(localUriString))
         }
     }
 
     private fun launchDownloadedApkInstaller(localUri: Uri) {
-        val file = File(localUri.path.orEmpty())
-        if (!file.exists()) {
-            Toast.makeText(this, R.string.update_install_failed, Toast.LENGTH_LONG).show()
-            return
+        val apkUri = if (localUri.scheme == "content") {
+            localUri
+        } else {
+            val file = File(localUri.path.orEmpty())
+            if (!file.exists()) {
+                Toast.makeText(this, R.string.update_install_failed, Toast.LENGTH_LONG).show()
+                return
+            }
+            FileProvider.getUriForFile(
+                this,
+                "${BuildConfig.APPLICATION_ID}.fileprovider",
+                file
+            )
         }
-        val apkUri = FileProvider.getUriForFile(
-            this,
-            "${BuildConfig.APPLICATION_ID}.fileprovider",
-            file
-        )
         val installIntent = Intent(Intent.ACTION_VIEW).apply {
             setDataAndType(apkUri, "application/vnd.android.package-archive")
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
@@ -465,6 +492,20 @@ class MainActivity : AppCompatActivity() {
                 startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(fallback)))
             }
         }
+    }
+
+    private fun restorePendingUpdateState() {
+        pendingUpdateFallbackUrl = updatePrefs.getString(KEY_PENDING_UPDATE_URL, null)
+        activeUpdateDownloadId = updatePrefs.getLong(KEY_ACTIVE_UPDATE_DOWNLOAD_ID, -1L).takeIf { it > 0L }
+        awaitingInstallPermissionGrant = updatePrefs.getBoolean(KEY_AWAITING_INSTALL_PERMISSION, false)
+    }
+
+    private fun clearPendingUpdateState() {
+        activeUpdateDownloadId = null
+        updatePrefs.edit()
+            .remove(KEY_ACTIVE_UPDATE_DOWNLOAD_ID)
+            .remove(KEY_AWAITING_INSTALL_PERMISSION)
+            .apply()
     }
 
     private fun showConfirmationDialog(trace: ExecutionTrace) {
