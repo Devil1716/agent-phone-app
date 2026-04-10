@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.10] - 2026-04-10
+
+### Fixed
+- local model downloads now write to a temporary file and only become active after a completed download
+- the app no longer treats a partially downloaded Gemma file as a ready model
+- local runtime initialization and inference are hardened against corrupt model files and native runtime failures
+
 ## [0.3.9] - 2026-04-10
 
 ### Fixed

@@ -63,11 +63,20 @@ class MediaPipeAiProvider(
                         maxTokens = maxTokens,
                         topK = topK
                     ).also { engineCache[cacheKey] = it }
-                } catch (exception: Exception) {
-                    exception.printStackTrace()
+                } catch (throwable: Throwable) {
+                    throwable.printStackTrace()
                     null
                 }
             }
+        }
+    }
+
+    private fun runInferenceSafely(engine: LlmInference, prompt: String): String? {
+        return try {
+            engine.generateResponse(prompt)
+        } catch (throwable: Throwable) {
+            throwable.printStackTrace()
+            null
         }
     }
 
@@ -98,7 +107,7 @@ class MediaPipeAiProvider(
         val engine = ensureInitialized(request)
 
         return if (engine != null) {
-            val response = engine.generateResponse(request.prompt)
+            val response = runInferenceSafely(engine, request.prompt)
             AiResponse(
                 providerId = descriptor.id,
                 model = descriptor.models.first(),

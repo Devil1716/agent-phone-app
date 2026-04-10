@@ -49,6 +49,8 @@
     <string name="model_import_main">Import Model</string>
     <string name="model_manage_settings">Manage Model Source</string>
     <string name="model_download_started">Gemma download started in the background.</string>
+    <string name="model_download_already_present">Gemma model is already on this device.</string>
+    <string name="model_download_already_running">Gemma model download is already in progress.</string>
     <string name="model_import_success">Gemma model imported successfully.</string>
     <string name="model_import_failure">Unable to import the selected model file.</string>
     <string name="model_download_failure">Unable to start the Gemma download. Check the model URL in settings.</string>

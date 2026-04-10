@@ -107,6 +107,12 @@ class OnboardingActivity : AppCompatActivity() {
     }
 
     private fun startDownload() {
+        if (modelDownloadManager.isModelDownloaded()) {
+            Toast.makeText(this, R.string.model_download_already_present, Toast.LENGTH_SHORT).show()
+            refreshModelState()
+            return
+        }
+
         val settings = AiSettingsRepository(this).load()
         val result = modelDownloadManager.startDownload(
             downloadUrl = settings.modelDownloadUrl,
@@ -116,12 +122,17 @@ class OnboardingActivity : AppCompatActivity() {
             Toast.makeText(this, R.string.model_download_started, Toast.LENGTH_SHORT).show()
             refreshModelState()
         } else {
-            val messageRes = if (settings.modelDownloadUrl.isBlank()) {
-                R.string.model_download_missing_url
-            } else {
-                R.string.model_download_failure
+            val messageRes = when (result.exceptionOrNull()?.message) {
+                ModelDownloadManager.ERROR_MODEL_ALREADY_PRESENT -> R.string.model_download_already_present
+                ModelDownloadManager.ERROR_MODEL_DOWNLOAD_ACTIVE -> R.string.model_download_already_running
+                else -> if (settings.modelDownloadUrl.isBlank()) {
+                    R.string.model_download_missing_url
+                } else {
+                    R.string.model_download_failure
+                }
             }
             Toast.makeText(this, messageRes, Toast.LENGTH_SHORT).show()
+            refreshModelState()
         }
     }
 
