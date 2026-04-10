@@ -30,4 +30,9 @@ class UpdateManagerTest {
     fun alphaBuildIsNotNewerThanStableForSameNumbers() {
         assertThat(manager.isNewerVersion("v0.3.1-alpha", current = "0.3.1")).isFalse()
     }
+
+    @Test
+    fun alphaReleaseIsNewerThanDebugBuildForSameNumbers() {
+        assertThat(manager.isNewerVersion("v0.3.3-alpha", current = "0.3.3-debug")).isTrue()
+    }
 }

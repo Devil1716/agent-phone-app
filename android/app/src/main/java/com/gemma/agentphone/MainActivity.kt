@@ -292,6 +292,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun checkForUpdates() {
         val updateManager = UpdateManager()
+        val fallbackReleaseUrl = updateManager.latestReleasePageUrl()
         updateManager.checkForUpdates(
             onUpdateFound = { version, url ->
                 runOnUiThread {
@@ -313,16 +314,28 @@ class MainActivity : AppCompatActivity() {
             },
             onNoUpdate = {
                 runOnUiThread {
-                    findViewById<TextView>(R.id.updateText).text = getString(R.string.update_up_to_date)
-                    findViewById<com.google.android.material.card.MaterialCardView>(R.id.updateCard).visibility =
-                        android.view.View.VISIBLE
+                    val updateCard = findViewById<com.google.android.material.card.MaterialCardView>(R.id.updateCard)
+                    val updateText = findViewById<TextView>(R.id.updateText)
+                    val downloadButton = findViewById<MaterialButton>(R.id.downloadUpdateButton)
+                    updateText.text = getString(R.string.update_up_to_date)
+                    downloadButton.text = getString(R.string.update_action_open_release)
+                    downloadButton.setOnClickListener {
+                        startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(fallbackReleaseUrl)))
+                    }
+                    updateCard.visibility = android.view.View.VISIBLE
                 }
             },
             onError = {
                 runOnUiThread {
-                    findViewById<TextView>(R.id.updateText).text = getString(R.string.update_check_failed)
-                    findViewById<com.google.android.material.card.MaterialCardView>(R.id.updateCard).visibility =
-                        android.view.View.VISIBLE
+                    val updateCard = findViewById<com.google.android.material.card.MaterialCardView>(R.id.updateCard)
+                    val updateText = findViewById<TextView>(R.id.updateText)
+                    val downloadButton = findViewById<MaterialButton>(R.id.downloadUpdateButton)
+                    updateText.text = getString(R.string.update_check_failed)
+                    downloadButton.text = getString(R.string.update_action_open_release)
+                    downloadButton.setOnClickListener {
+                        startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(fallbackReleaseUrl)))
+                    }
+                    updateCard.visibility = android.view.View.VISIBLE
                 }
             }
         )

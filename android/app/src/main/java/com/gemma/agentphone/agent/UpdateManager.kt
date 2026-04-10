@@ -18,6 +18,10 @@ class UpdateManager(
 
     private val repoUrl =
         "https://api.github.com/repos/${BuildConfig.APP_REPO_OWNER}/${BuildConfig.APP_REPO_NAME}/releases/latest"
+    private val releasesPageUrl =
+        "https://github.com/${BuildConfig.APP_REPO_OWNER}/${BuildConfig.APP_REPO_NAME}/releases/latest"
+
+    fun latestReleasePageUrl(): String = releasesPageUrl
 
     fun checkForUpdates(
         onUpdateFound: (version: String, url: String) -> Unit,
@@ -120,6 +124,7 @@ class UpdateManager(
         val numbers = normalizeVersion(normalized)
         val lowered = normalized.lowercase(Locale.US)
         val stageRank = when {
+            lowered.contains("debug") || lowered.contains("dev") || lowered.contains("snapshot") -> -1
             lowered.contains("alpha") -> 0
             lowered.contains("beta") -> 1
             lowered.contains("rc") -> 2
