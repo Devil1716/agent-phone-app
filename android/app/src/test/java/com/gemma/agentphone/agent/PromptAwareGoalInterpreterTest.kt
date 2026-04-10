@@ -47,4 +47,19 @@ class PromptAwareGoalInterpreterTest {
         assertThat(goal.category).isEqualTo(GoalCategory.DRAFT_MESSAGE)
         assertThat(goal.targetApp).isEqualTo("whatsapp")
     }
+
+    @Test
+    fun routesMultiStepCommandsToAutonomousModeWhenPromptRequestsCarefulAnalysis() {
+        val interpreter = PromptAwareGoalInterpreter(
+            settings = AiSettings.defaultGemma().copy(
+                customPrompt = "Analyze carefully step by step before taking actions."
+            )
+        )
+
+        val goal = interpreter.interpret("open play store and install spotify")
+
+        assertThat(goal.category).isEqualTo(GoalCategory.GENERAL_APP_CONTROL)
+        assertThat(goal.requiresFastPath).isFalse()
+        assertThat(goal.targetApp).isNull()
+    }
 }

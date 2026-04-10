@@ -8,6 +8,7 @@ import com.gemma.agentphone.model.AiResponse
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.google.mediapipe.tasks.genai.llminference.LlmInference.LlmInferenceOptions
 import java.io.File
+import java.util.concurrent.ConcurrentHashMap
 
 class MediaPipeAiProvider(
     private val context: Context,
@@ -15,35 +16,86 @@ class MediaPipeAiProvider(
     private val modelFile: File
 ) : AiProvider {
 
-    private var llmInference: LlmInference? = null
-    private var isInitializing = false
+    companion object {
+        private data class CachedEngine(
+            val inference: LlmInference,
+            val maxTokens: Int,
+            val topK: Int
+        )
 
-    private fun ensureInitialized(): LlmInference? {
-        if (llmInference == null && !isInitializing && modelFile.exists()) {
-            synchronized(this) {
-                if (llmInference == null) {
-                    try {
-                        isInitializing = true
-                        val options = LlmInferenceOptions.builder()
-                            .setModelPath(modelFile.absolutePath)
-                            .setMaxTokens(512)
-                            .setMaxTopK(40)
-                            .build()
-                        llmInference = LlmInference.createFromOptions(context, options)
-                    } catch (exception: Exception) {
-                        exception.printStackTrace()
-                    } finally {
-                        isInitializing = false
-                    }
+        private val engineCache = ConcurrentHashMap<String, CachedEngine>()
+        private val initializationLocks = ConcurrentHashMap<String, Any>()
+
+        fun prewarm(context: Context, modelFile: File) {
+            if (!modelFile.exists()) {
+                return
+            }
+            getOrCreateEngine(context.applicationContext, modelFile, maxTokens = 160, topK = 24)
+        }
+
+        private fun getOrCreateEngine(
+            context: Context,
+            modelFile: File,
+            maxTokens: Int,
+            topK: Int
+        ): CachedEngine? {
+            val cacheKey = modelFile.absolutePath
+            val cached = engineCache[cacheKey]
+            if (cached != null && cached.maxTokens <= maxTokens && cached.topK <= topK) {
+                return cached
+            }
+
+            val lock = initializationLocks.getOrPut(cacheKey) { Any() }
+            synchronized(lock) {
+                val refreshed = engineCache[cacheKey]
+                if (refreshed != null && refreshed.maxTokens <= maxTokens && refreshed.topK <= topK) {
+                    return refreshed
+                }
+
+                return try {
+                    val options = LlmInferenceOptions.builder()
+                        .setModelPath(modelFile.absolutePath)
+                        .setMaxTokens(maxTokens)
+                        .setMaxTopK(topK)
+                        .build()
+                    CachedEngine(
+                        inference = LlmInference.createFromOptions(context, options),
+                        maxTokens = maxTokens,
+                        topK = topK
+                    ).also { engineCache[cacheKey] = it }
+                } catch (exception: Exception) {
+                    exception.printStackTrace()
+                    null
                 }
             }
         }
-        return llmInference
+    }
+
+    private fun ensureInitialized(request: AiRequest): LlmInference? {
+        if (!modelFile.exists()) {
+            return null
+        }
+
+        val maxTokens = when (request.mode) {
+            "autonomous" -> 160
+            else -> 256
+        }
+        val topK = when (request.mode) {
+            "autonomous" -> 24
+            else -> 32
+        }
+
+        return getOrCreateEngine(
+            context = context.applicationContext,
+            modelFile = modelFile,
+            maxTokens = maxTokens,
+            topK = topK
+        )?.inference
     }
 
     override fun infer(request: AiRequest): AiResponse {
         val startTime = System.currentTimeMillis()
-        val engine = ensureInitialized()
+        val engine = ensureInitialized(request)
 
         return if (engine != null) {
             val response = engine.generateResponse(request.prompt)

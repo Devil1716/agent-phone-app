@@ -26,6 +26,11 @@
     <string name="stop_command">Stop</string>
     <string name="execution_trace">Execution Trace</string>
     <string name="trace_idle">No command has been run yet.</string>
+    <string name="trace_analyzing">Gemma is analyzing the request and screen context…</string>
+    <string name="trace_canceled">Execution canceled by user.</string>
+    <string name="trace_voice_unavailable">Voice input is not available on this device.</string>
+    <string name="trace_error_with_reason">Error running the agent: %1$s\n\nCheck that the local model is ready or that your fallback provider is configured.</string>
+    <string name="trace_unknown_error">Unknown error</string>
     <string name="status_label">Agent Status</string>
     <string name="voice_input">Voice input</string>
     <string name="history_label">Execution History</string>

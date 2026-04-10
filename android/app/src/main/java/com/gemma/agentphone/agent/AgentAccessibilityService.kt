@@ -17,37 +17,51 @@ class AgentAccessibilityService : AccessibilityService() {
 
         fun latestObservation(): ScreenObservation? = latestSnapshot
 
-        fun dispatchAutonomousAction(responseSummary: String): ExternalActionRequest? {
-            val service = instance ?: return null
-            val normalized = responseSummary.lowercase()
+        fun isConnected(): Boolean = instance != null
 
-            when {
-                normalized.contains("open notifications") -> {
+        fun dispatchAutonomousAction(responseSummary: String): Boolean {
+            val service = instance ?: return false
+            val normalized = responseSummary.lowercase()
+            val structuredAction = responseSummary.lines()
+                .firstOrNull { it.trim().startsWith("ACTION:", ignoreCase = true) }
+                ?.substringAfter(':')
+                ?.trim()
+                ?.uppercase()
+            val textPayload = responseSummary.lines()
+                .firstOrNull {
+                    val trimmed = it.trim()
+                    trimmed.startsWith("TEXT:", ignoreCase = true) || trimmed.startsWith("QUERY:", ignoreCase = true)
+                }
+                ?.substringAfter(':')
+                ?.trim()
+                .orEmpty()
+
+            val handled = when {
+                structuredAction == "OPEN_NOTIFICATIONS" || normalized.contains("open notifications") -> {
                     service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_NOTIFICATIONS)
                 }
 
-                normalized.contains("go home") -> {
+                structuredAction == "GO_HOME" || normalized.contains("go home") -> {
                     service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME)
                 }
 
-                normalized.contains("back") -> {
+                structuredAction == "GO_BACK" || normalized.contains("back") -> {
                     service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
                 }
 
-                normalized.contains("tap search") -> {
-                    service.tapNodeWithText("Search")
+                structuredAction == "TAP_TEXT" && textPayload.isNotBlank() -> {
+                    service.tapNodeWithText(textPayload)
                 }
 
                 else -> {
-                    service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_RECENTS)
-                    Handler(Looper.getMainLooper()).postDelayed({
-                        service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
-                    }, 700)
+                    false
                 }
             }
 
-            service.refreshSnapshot()
-            return null
+            if (handled) {
+                service.refreshSnapshot()
+            }
+            return handled
         }
     }
 

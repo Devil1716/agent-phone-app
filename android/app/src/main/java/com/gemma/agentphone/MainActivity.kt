@@ -23,9 +23,11 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
 import com.gemma.agentphone.agent.AgentRuntimeFactory
 import com.gemma.agentphone.agent.AgentOrchestrator
+import com.gemma.agentphone.agent.AgentAccessibilityService
 import com.gemma.agentphone.agent.ExecutionTrace
 import com.gemma.agentphone.agent.ModelDownloadManager
 import com.gemma.agentphone.agent.ModelDownloadStatus
+import com.gemma.agentphone.agent.MediaPipeAiProvider
 import com.gemma.agentphone.agent.StepStatus
 import com.gemma.agentphone.agent.TraceEntry
 import com.gemma.agentphone.agent.UpdateManager
@@ -37,6 +39,8 @@ import com.gemma.agentphone.model.SharedPreferencesKeyValueStore
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -55,6 +59,7 @@ class MainActivity : AppCompatActivity() {
 
     private val providerRegistry = AiProviderRegistry()
     private val runtimeFactory = AgentRuntimeFactory()
+    private var activeExecutionJob: Job? = null
     private lateinit var statusText: TextView
     private lateinit var traceText: TextView
     private lateinit var commandInput: EditText
@@ -147,7 +152,7 @@ class MainActivity : AppCompatActivity() {
             runCommand()
         }
         findViewById<android.view.View>(R.id.stopCommandButton).setOnClickListener {
-            traceText.text = "Execution canceled by user."
+            stopActiveExecution()
         }
         findViewById<android.view.View>(R.id.voiceInputButton).setOnClickListener {
             launchVoiceInput()
@@ -181,6 +186,7 @@ class MainActivity : AppCompatActivity() {
             appendLine()
             orchestrator.summaryLines().forEach(::appendLine)
             appendLine()
+            appendLine("Accessibility control connected: ${AgentAccessibilityService.isConnected()}")
             appendLine("Available providers:")
             providerRegistry.listProviders().forEach { provider ->
                 appendLine("- ${provider.displayName}: ${provider.models.joinToString()}")
@@ -190,6 +196,7 @@ class MainActivity : AppCompatActivity() {
             traceText.text = getString(R.string.trace_idle)
         }
         refreshModelStatus()
+        prewarmLocalModelIfReady()
         if (!hasCheckedForUpdates) {
             hasCheckedForUpdates = true
             checkForUpdates()
@@ -217,17 +224,17 @@ class MainActivity : AppCompatActivity() {
         val command = commandInput.text.toString()
         if (command.isBlank()) return
 
-        traceText.text = "Gemma is analyzing the request and screen context..."
         val runCommandButton = findViewById<android.view.View>(R.id.runCommandButton)
+        activeExecutionJob?.cancel()
+        traceText.text = getString(R.string.trace_analyzing)
         runCommandButton.isEnabled = false
 
-        lifecycleScope.launch(Dispatchers.Default) {
+        activeExecutionJob = lifecycleScope.launch(Dispatchers.Default) {
             try {
                 val settings = AiSettingsRepository(this@MainActivity).load()
                 val trace = runtimeFactory.createCoordinator(this@MainActivity, settings, providerRegistry).run(command)
 
                 withContext(Dispatchers.Main) {
-                    runCommandButton.isEnabled = true
                     historyRepository.add(
                         ExecutionHistoryEntry(
                             timestampMs = System.currentTimeMillis(),
@@ -247,15 +254,34 @@ class MainActivity : AppCompatActivity() {
                         trace.externalActions.forEach { externalActionLauncher.launch(this@MainActivity, it.spec) }
                     }
                 }
+            } catch (_: CancellationException) {
+                withContext(Dispatchers.Main) {
+                    traceText.text = getString(R.string.trace_canceled)
+                }
             } catch (exception: Exception) {
                 withContext(Dispatchers.Main) {
-                    runCommandButton.isEnabled = true
                     traceText.text =
-                        "Error running the agent: ${exception.localizedMessage ?: "Unknown error"}\n\n" +
-                        "Check that the local model is ready or that your fallback provider is configured."
+                        getString(
+                            R.string.trace_error_with_reason,
+                            exception.localizedMessage ?: getString(R.string.trace_unknown_error)
+                        )
+                }
+            } finally {
+                withContext(Dispatchers.Main) {
+                    runCommandButton.isEnabled = true
+                    if (activeExecutionJob?.isCancelled != false) {
+                        activeExecutionJob = null
+                    }
                 }
             }
         }
+    }
+
+    private fun stopActiveExecution() {
+        activeExecutionJob?.cancel()
+        activeExecutionJob = null
+        findViewById<android.view.View>(R.id.runCommandButton).isEnabled = true
+        traceText.text = getString(R.string.trace_canceled)
     }
 
     private fun startModelDownload() {
@@ -384,7 +410,7 @@ class MainActivity : AppCompatActivity() {
     private fun downloadAndInstallUpdate(apkUrl: String) {
         pendingUpdateFallbackUrl = apkUrl
         updatePrefs.edit().putString(KEY_PENDING_UPDATE_URL, apkUrl).apply()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !packageManager.canRequestPackageInstalls()) {
+        if (!packageManager.canRequestPackageInstalls()) {
             awaitingInstallPermissionGrant = true
             updatePrefs.edit().putBoolean(KEY_AWAITING_INSTALL_PERMISSION, true).apply()
             Toast.makeText(this, R.string.update_install_permission_needed, Toast.LENGTH_LONG).show()
@@ -418,7 +444,7 @@ class MainActivity : AppCompatActivity() {
         if (!awaitingInstallPermissionGrant) return
         awaitingInstallPermissionGrant = false
         updatePrefs.edit().putBoolean(KEY_AWAITING_INSTALL_PERMISSION, false).apply()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !packageManager.canRequestPackageInstalls()) {
+        if (!packageManager.canRequestPackageInstalls()) {
             return
         }
         pendingUpdateFallbackUrl?.let { downloadAndInstallUpdate(it) }
@@ -533,7 +559,19 @@ class MainActivity : AppCompatActivity() {
         try {
             speechLauncher.launch(intent)
         } catch (_: Exception) {
-            traceText.text = "Voice input is not available on this device."
+            traceText.text = getString(R.string.trace_voice_unavailable)
+        }
+    }
+
+    private fun prewarmLocalModelIfReady() {
+        lifecycleScope.launch(Dispatchers.Default) {
+            runCatching {
+                val settings = AiSettingsRepository(this@MainActivity).load()
+                if (settings.activeProvider == "gemma-local") {
+                    val modelFile = modelDownloadManager.getModelFile()
+                    MediaPipeAiProvider.prewarm(this@MainActivity, modelFile)
+                }
+            }
         }
     }
 

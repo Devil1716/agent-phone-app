@@ -29,4 +29,26 @@ class AutonomousActionParserTest {
         assertThat(action!!.spec.packageName).isEqualTo("com.whatsapp")
         assertThat(action.spec.data).contains("wa.me")
     }
+
+    @Test
+    fun openAppAliasResolvesKnownPackage() {
+        val action = parser.parse(
+            command = "open gmail",
+            responseSummary = "ACTION: OPEN_APP\nQUERY: gmail"
+        )
+
+        assertThat(action).isNotNull()
+        assertThat(action!!.spec.packageName).isEqualTo("com.google.android.gm")
+    }
+
+    @Test
+    fun openSettingsBuildsWifiIntent() {
+        val action = parser.parse(
+            command = "open wifi settings",
+            responseSummary = "ACTION: OPEN_SETTINGS\nQUERY: wifi"
+        )
+
+        assertThat(action).isNotNull()
+        assertThat(action!!.spec.action).isEqualTo("android.settings.WIFI_SETTINGS")
+    }
 }

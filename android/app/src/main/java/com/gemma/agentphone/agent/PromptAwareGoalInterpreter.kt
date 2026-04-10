@@ -17,6 +17,12 @@ class PromptAwareGoalInterpreter(
 
         return when {
             shouldPreferWhatsApp(interpreted, input) -> interpreted.copy(targetApp = "whatsapp")
+            shouldRouteComplexCommandToAutonomousMode(input) -> interpreted.copy(
+                category = GoalCategory.GENERAL_APP_CONTROL,
+                targetApp = null,
+                targetValue = null,
+                requiresFastPath = false
+            )
             else -> interpreted
         }
     }
@@ -37,5 +43,19 @@ class PromptAwareGoalInterpreter(
             normalizedInput.contains("whats app")
 
         return prefersWhatsApp && !alreadyTargetsWhatsApp
+    }
+
+    private fun shouldRouteComplexCommandToAutonomousMode(input: String): Boolean {
+        val normalizedInput = input.lowercase()
+        val normalizedPrompt = settings.customPrompt.lowercase()
+        val promptRequestsReasoning = normalizedPrompt.contains("analy") ||
+            normalizedPrompt.contains("step by step") ||
+            normalizedPrompt.contains("careful")
+        val commandLooksMultiStep = normalizedInput.contains(" and ") ||
+            normalizedInput.contains(" then ") ||
+            normalizedInput.contains("after ") ||
+            normalizedInput.contains("before ")
+
+        return promptRequestsReasoning && commandLooksMultiStep
     }
 }

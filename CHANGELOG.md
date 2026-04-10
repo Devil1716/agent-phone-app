@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.8] - 2026-04-10
+
+### Added
+- stricter prompt-to-action formatting for autonomous phone control
+- package visibility queries for better installed-app resolution on modern Android
+- background prewarm for the local MediaPipe Gemma runtime
+
+### Changed
+- autonomous command handling now explains when accessibility control or model runtime is unavailable instead of reporting false success
+- multi-step commands can route into the autonomous path when the custom prompt asks for careful analysis
+- local Gemma inference now reuses a cached engine and uses leaner generation settings for faster phone-control responses
+- main screen now reports accessibility connection state and the Stop button cancels in-flight work
+
 ## [0.2.0] - 2026-04-07
 
 ### Added

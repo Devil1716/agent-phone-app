@@ -63,7 +63,7 @@ class ExecutionCoordinatorTest {
 
         assertThat(trace.goal.category).isEqualTo(GoalCategory.GENERAL_APP_CONTROL)
         assertThat(trace.entries).isNotEmpty()
-        assertThat(trace.entries.last().status).isEqualTo(StepStatus.SUCCESS)
+        assertThat(trace.entries.last().status).isEqualTo(StepStatus.SKIPPED)
         assertThat(trace.entries.last().executorName).isEqualTo("AccessibilityExecutor")
     }
 

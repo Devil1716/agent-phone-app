@@ -18,6 +18,7 @@ class AccessibilityExecutor(
 
     override fun execute(step: TaskStep, observation: ScreenObservation): StepResult {
         var externalAction: ExternalActionRequest? = null
+        var status = StepStatus.SUCCESS
         val message = when (step.type) {
             StepType.SUMMARIZE_NOTIFICATIONS -> {
                 val summaries = AgentNotificationListener.getActiveNotificationSummaries()
@@ -31,7 +32,8 @@ class AccessibilityExecutor(
 
             StepType.EXECUTE_AUTONOMOUSLY -> {
                 if (aiProvider == null) {
-                    "Error: No AI provider is available to reason about this command."
+                    status = StepStatus.SKIPPED
+                    "No AI provider is available to reason about this command. Configure a local model or fallback provider first."
                 } else {
                     val request = AiRequest(
                         prompt = AutonomousPromptComposer(
@@ -49,9 +51,36 @@ class AccessibilityExecutor(
                     externalAction = actionParser.parse(
                         command = step.payload.orEmpty(),
                         responseSummary = response.summary
-                    ) ?: AgentAccessibilityService.dispatchAutonomousAction(response.summary)
+                    )
+                    val performedAccessibilityAction = if (externalAction == null) {
+                        AgentAccessibilityService.dispatchAutonomousAction(response.summary)
+                    } else {
+                        false
+                    }
+                    val runtimeUnavailable = response.summary.contains("not ready", ignoreCase = true) ||
+                        response.summary.contains("did not return", ignoreCase = true) ||
+                        response.summary.contains("error", ignoreCase = true)
 
-                    "Local Gemma suggested the next app-control step: ${response.summary} (Latency: ${response.latencyMs}ms)"
+                    when {
+                        externalAction != null || performedAccessibilityAction -> {
+                            "Local Gemma suggested the next app-control step: ${response.summary} (Latency: ${response.latencyMs}ms)"
+                        }
+
+                        runtimeUnavailable -> {
+                            status = StepStatus.SKIPPED
+                            "The agent could not act because the local runtime was unavailable. Response: ${response.summary}"
+                        }
+
+                        !AgentAccessibilityService.isConnected() -> {
+                            status = StepStatus.SKIPPED
+                            "The agent produced a plan, but Accessibility access is not enabled, so it cannot control the phone yet. Response: ${response.summary}"
+                        }
+
+                        else -> {
+                            status = StepStatus.SKIPPED
+                            "The agent analyzed the request, but the response did not map to a supported phone action yet. Response: ${response.summary}"
+                        }
+                    }
                 }
             }
 
@@ -60,7 +89,7 @@ class AccessibilityExecutor(
 
         return StepResult(
             stepId = step.id,
-            status = StepStatus.SUCCESS,
+            status = status,
             message = message,
             executorName = "AccessibilityExecutor",
             externalAction = externalAction

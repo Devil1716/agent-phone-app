@@ -36,6 +36,8 @@
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
+                    android:contentDescription="@null"
+                    android:importantForAccessibility="no"
                     android:src="@android:drawable/stat_sys_download_done"
                     app:tint="@android:color/white" />
 
@@ -53,7 +55,7 @@
                     android:id="@+id/downloadUpdateButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Update"
+                    android:text="@string/update_action_open_release"
                     style="@style/Widget.MaterialComponents.Button.TextButton"
                     android:textColor="@android:color/white" />
             </LinearLayout>
