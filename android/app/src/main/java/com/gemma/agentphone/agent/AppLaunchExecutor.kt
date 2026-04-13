@@ -98,7 +98,7 @@ class AppLaunchExecutor(
             message = "Prepared launch for ${resolved.label}.",
             executorName = "AppLaunchExecutor",
             externalAction = ExternalActionRequest(
-                IntentSpec(
+                spec = IntentSpec(
                     action = Intent.ACTION_MAIN,
                     packageName = resolved.packageName
                 )

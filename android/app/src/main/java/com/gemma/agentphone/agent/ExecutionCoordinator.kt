@@ -24,12 +24,24 @@ class ExecutionCoordinator(
             val decision = policyEngine.classify(step)
             when (decision.action) {
                 PolicyAction.BLOCK -> {
-                    entries += TraceEntry(step.id, step.description, StepStatus.BLOCKED, "PolicyEngine", decision.reason)
+                    entries += TraceEntry(
+                        stepId = step.id,
+                        description = step.description,
+                        status = StepStatus.BLOCKED,
+                        executorName = "PolicyEngine",
+                        detail = decision.reason
+                    )
                     return ExecutionTrace(goal, plan.strategy, entries, "Blocked: ${step.description}")
                 }
 
                 PolicyAction.REQUIRE_CONFIRMATION -> {
-                    entries += TraceEntry(step.id, step.description, StepStatus.PENDING_CONFIRMATION, "PolicyEngine", decision.reason)
+                    entries += TraceEntry(
+                        stepId = step.id,
+                        description = step.description,
+                        status = StepStatus.PENDING_CONFIRMATION,
+                        executorName = "PolicyEngine",
+                        detail = decision.reason
+                    )
                     return ExecutionTrace(
                         goal = goal,
                         strategy = plan.strategy,
@@ -43,7 +55,13 @@ class ExecutionCoordinator(
                 PolicyAction.ALLOW -> {
                     val executor = executors.firstOrNull { it.canExecute(step) }
                     if (executor == null) {
-                        entries += TraceEntry(step.id, step.description, StepStatus.SKIPPED, "ExecutionCoordinator", "No executor available")
+                        entries += TraceEntry(
+                            stepId = step.id,
+                            description = step.description,
+                            status = StepStatus.SKIPPED,
+                            executorName = "ExecutionCoordinator",
+                            detail = "No executor available"
+                        )
                         continue
                     }
 
@@ -72,7 +90,13 @@ class ExecutionCoordinator(
                                 // Capture new state for next iteration
                                 currentStepObservation = observationService.capture()
                             } catch (e: Exception) {
-                                entries += TraceEntry(step.id, step.description, StepStatus.SKIPPED, executor.javaClass.simpleName, e.localizedMessage ?: "Iterative step failed")
+                                entries += TraceEntry(
+                                    stepId = step.id,
+                                    description = step.description,
+                                    status = StepStatus.SKIPPED,
+                                    executorName = executor.javaClass.simpleName,
+                                    detail = e.localizedMessage ?: "Iterative step failed"
+                                )
                                 break
                             }
                         }
@@ -90,11 +114,11 @@ class ExecutionCoordinator(
                             }
                         } catch (exception: Exception) {
                             entries += TraceEntry(
-                                step.id,
-                                step.description,
-                                StepStatus.SKIPPED,
-                                executor.javaClass.simpleName,
-                                exception.localizedMessage ?: "Executor failed while preparing this step."
+                                stepId = step.id,
+                                description = step.description,
+                                status = StepStatus.SKIPPED,
+                                executorName = executor.javaClass.simpleName,
+                                detail = exception.localizedMessage ?: "Executor failed while preparing this step."
                             )
                         }
                     }

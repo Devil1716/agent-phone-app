@@ -16,7 +16,7 @@ class IntentExecutor : ActionExecutor {
                 status = StepStatus.SUCCESS,
                 message = "Prepared Wi-Fi settings intent",
                 executorName = "IntentExecutor",
-                externalAction = ExternalActionRequest(IntentSpec(action = "android.settings.WIFI_SETTINGS"))
+                externalAction = ExternalActionRequest(spec = IntentSpec(action = "android.settings.WIFI_SETTINGS"))
             )
 
             StepType.OPEN_MAPS -> {
@@ -27,7 +27,7 @@ class IntentExecutor : ActionExecutor {
                     message = "Prepared maps navigation intent",
                     executorName = "IntentExecutor",
                     externalAction = ExternalActionRequest(
-                        IntentSpec(
+                        spec = IntentSpec(
                             action = "android.intent.action.VIEW",
                             data = "google.navigation:q=$query"
                         )
@@ -44,7 +44,7 @@ class IntentExecutor : ActionExecutor {
                         message = "Prepared WhatsApp draft intent",
                         executorName = "IntentExecutor",
                         externalAction = ExternalActionRequest(
-                            IntentSpec(
+                            spec = IntentSpec(
                                 action = "android.intent.action.VIEW",
                                 data = "https://wa.me/?text=$body",
                                 packageName = WHATSAPP_PACKAGE
@@ -58,7 +58,7 @@ class IntentExecutor : ActionExecutor {
                         message = "Prepared SMS draft intent",
                         executorName = "IntentExecutor",
                         externalAction = ExternalActionRequest(
-                            IntentSpec(
+                            spec = IntentSpec(
                                 action = "android.intent.action.SENDTO",
                                 data = "smsto:?body=$body"
                             )
@@ -67,7 +67,12 @@ class IntentExecutor : ActionExecutor {
                 }
             }
 
-            else -> StepResult(step.id, StepStatus.SKIPPED, "Intent executor skipped", "IntentExecutor")
+            else -> StepResult(
+                stepId = step.id,
+                status = StepStatus.SKIPPED,
+                message = "Intent executor skipped",
+                executorName = "IntentExecutor"
+            )
         }
     }
 }
