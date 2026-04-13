@@ -19,7 +19,7 @@ import java.io.IOException
 import java.util.Locale
 
 class UpdateManager(
-    private val context: Context,
+    private val context: Context? = null,
     private val client: OkHttpClient = OkHttpClient(),
     private val currentVersionName: String = BuildConfig.VERSION_NAME,
     private val currentVersionCode: Int = BuildConfig.VERSION_CODE
@@ -88,15 +88,16 @@ class UpdateManager(
     }
 
     fun downloadAndInstallUpdate(apkUrl: String): Long? {
+        val ctx = context ?: return null
         cleanupOldUpdates()
 
-        val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+        val downloadManager = ctx.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
         val request = DownloadManager.Request(Uri.parse(apkUrl))
             .setTitle("Gemma Agent Update")
             .setDescription("Downloading newer version: $apkUrl")
             .setMimeType("application/vnd.android.package-archive")
             .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            .setDestinationInExternalFilesDir(context, null, UPDATE_FILE_NAME)
+            .setDestinationInExternalFilesDir(ctx, null, UPDATE_FILE_NAME)
 
         return try {
             downloadManager.enqueue(request)
@@ -107,7 +108,8 @@ class UpdateManager(
     }
 
     fun installDownloadedUpdate(downloadId: Long) {
-        val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+        val ctx = context ?: return
+        val downloadManager = ctx.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
         val uri = downloadManager.getUriForDownloadedFile(downloadId) ?: return
         
         val installIntent = Intent(Intent.ACTION_VIEW).apply {
@@ -117,15 +119,16 @@ class UpdateManager(
         }
         
         try {
-            context.startActivity(installIntent)
+            ctx.startActivity(installIntent)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start installer", e)
         }
     }
 
     fun cleanupOldUpdates() {
+        val ctx = context ?: return
         try {
-            val updateFile = File(context.getExternalFilesDir(null), UPDATE_FILE_NAME)
+            val updateFile = File(ctx.getExternalFilesDir(null), UPDATE_FILE_NAME)
             if (updateFile.exists()) {
                 updateFile.delete()
                 Log.d(TAG, "Cleaned up old update file.")
