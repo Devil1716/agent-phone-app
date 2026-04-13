@@ -53,6 +53,18 @@ class AgentAccessibilityService : AccessibilityService() {
                     service.tapNodeWithText(textPayload)
                 }
 
+                structuredAction == "SCROLL_UP" || normalized.contains("scroll up") -> {
+                    service.scrollUp()
+                }
+
+                structuredAction == "SCROLL_DOWN" || normalized.contains("scroll down") -> {
+                    service.scrollDown()
+                }
+
+                structuredAction == "LONG_PRESS" && textPayload.isNotBlank() -> {
+                    service.longPressNodeWithText(textPayload)
+                }
+
                 else -> {
                     false
                 }
@@ -115,7 +127,7 @@ class AgentAccessibilityService : AccessibilityService() {
     private fun tapNodeWithText(text: String): Boolean {
         val root = rootInActiveWindow ?: return false
         val nodes = root.findAccessibilityNodeInfosByText(text)
-        val tappable = nodes.firstOrNull { it.isClickable || it.isFocusable } ?: return false
+        val tappable = nodes.firstOrNull { it.isClickable || it.isFocusable } ?: nodes.firstOrNull() ?: return false
         if (tappable.isClickable) {
             return tappable.performAction(AccessibilityNodeInfo.ACTION_CLICK)
         }
@@ -129,5 +141,79 @@ class AgentAccessibilityService : AccessibilityService() {
             .addStroke(GestureDescription.StrokeDescription(path, 0, 50))
             .build()
         return dispatchGesture(gesture, null, null)
+    }
+
+    private fun longPressNodeWithText(text: String): Boolean {
+        val root = rootInActiveWindow ?: return false
+        val nodes = root.findAccessibilityNodeInfosByText(text)
+        val tappable = nodes.firstOrNull { it.isClickable || it.isFocusable || it.isLongClickable } ?: nodes.firstOrNull() ?: return false
+        
+        if (tappable.isLongClickable) {
+            return tappable.performAction(AccessibilityNodeInfo.ACTION_LONG_CLICK)
+        }
+
+        val bounds = android.graphics.Rect()
+        tappable.getBoundsInScreen(bounds)
+        val path = Path().apply {
+            moveTo(bounds.exactCenterX(), bounds.exactCenterY())
+        }
+        val gesture = GestureDescription.Builder()
+            .addStroke(GestureDescription.StrokeDescription(path, 0, 1000))
+            .build()
+        return dispatchGesture(gesture, null, null)
+    }
+
+    private fun scrollUp(): Boolean {
+        val root = rootInActiveWindow ?: return false
+        val scrollable = findScrollableNode(root)
+        if (scrollable != null) {
+            return scrollable.performAction(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD)
+        }
+        
+        val displayMetrics = resources.displayMetrics
+        val centerX = displayMetrics.widthPixels / 2f
+        val startY = displayMetrics.heightPixels * 0.2f
+        val endY = displayMetrics.heightPixels * 0.8f
+        
+        val path = Path().apply {
+            moveTo(centerX, startY)
+            lineTo(centerX, endY)
+        }
+        val gesture = GestureDescription.Builder()
+            .addStroke(GestureDescription.StrokeDescription(path, 0, 300))
+            .build()
+        return dispatchGesture(gesture, null, null)
+    }
+
+    private fun scrollDown(): Boolean {
+        val root = rootInActiveWindow ?: return false
+        val scrollable = findScrollableNode(root)
+        if (scrollable != null) {
+            return scrollable.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
+        }
+
+        val displayMetrics = resources.displayMetrics
+        val centerX = displayMetrics.widthPixels / 2f
+        val startY = displayMetrics.heightPixels * 0.8f
+        val endY = displayMetrics.heightPixels * 0.2f
+
+        val path = Path().apply {
+            moveTo(centerX, startY)
+            lineTo(centerX, endY)
+        }
+        val gesture = GestureDescription.Builder()
+            .addStroke(GestureDescription.StrokeDescription(path, 0, 300))
+            .build()
+        return dispatchGesture(gesture, null, null)
+    }
+
+    private fun findScrollableNode(node: AccessibilityNodeInfo): AccessibilityNodeInfo? {
+        if (node.isScrollable) return node
+        for (i in 0 until node.childCount) {
+            val child = node.getChild(i) ?: continue
+            val result = findScrollableNode(child)
+            if (result != null) return result
+        }
+        return null
     }
 }

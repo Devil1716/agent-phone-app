@@ -49,11 +49,18 @@ class AutonomousActionParser {
         val queryLine = lines.firstOrNull { it.startsWith("QUERY:", ignoreCase = true) }
         val textLine = lines.firstOrNull { it.startsWith("TEXT:", ignoreCase = true) }
         val appLine = lines.firstOrNull { it.startsWith("APP:", ignoreCase = true) }
+        val thoughtLine = lines.firstOrNull { it.startsWith("THOUGHT:", ignoreCase = true) }
 
         val action = actionLine.substringAfter(':').trim().uppercase()
         val query = queryLine?.substringAfter(':')?.trim().orEmpty()
         val text = textLine?.substringAfter(':')?.trim().orEmpty()
         val app = appLine?.substringAfter(':')?.trim().orEmpty()
+        val thought = thoughtLine?.substringAfter(':')?.trim().orEmpty()
+
+        if (thought.isNotBlank()) {
+            // Log thinking for visibility
+            println("Agent Thinking: $thought")
+        }
 
         return when (action) {
             "PLAY_STORE_SEARCH" -> buildPlayStoreSearch(query)
@@ -98,6 +105,14 @@ class AutonomousActionParser {
             }
 
             "WHATSAPP_MESSAGE" -> buildWhatsAppDraft(text)
+            
+            "LONG_PRESS",
+            "TAP_TEXT",
+            "SCROLL_UP",
+            "SCROLL_DOWN",
+            "WAIT",
+            "DONE" -> null // Handled by Accessibility service directly
+
             else -> null
         }
     }
