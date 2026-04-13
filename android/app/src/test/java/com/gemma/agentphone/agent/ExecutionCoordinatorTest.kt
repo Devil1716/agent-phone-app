@@ -4,6 +4,7 @@ import com.gemma.agentphone.model.GoalCategory
 import com.gemma.agentphone.model.UserGoal
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
+import kotlinx.coroutines.runBlocking
 
 class ExecutionCoordinatorTest {
 
@@ -23,7 +24,7 @@ class ExecutionCoordinatorTest {
     @Test
     fun wifiCommandProducesSuccessTrace() {
         val coordinator = buildCoordinator()
-        val trace = coordinator.run("open Wi-Fi settings")
+        val trace = runBlocking { coordinator.run("open Wi-Fi settings") }
 
         assertThat(trace.goal.category).isEqualTo(GoalCategory.OPEN_SETTINGS)
         assertThat(trace.strategy).isEqualTo(ExecutionStrategy.FAST_PATH)
@@ -37,7 +38,7 @@ class ExecutionCoordinatorTest {
     @Test
     fun browserSearchSucceeds() {
         val coordinator = buildCoordinator()
-        val trace = coordinator.run("search the web for Gemma")
+        val trace = runBlocking { coordinator.run("search the web for Gemma") }
 
         assertThat(trace.goal.category).isEqualTo(GoalCategory.WEB_SEARCH)
         assertThat(trace.entries).hasSize(1)
@@ -49,7 +50,7 @@ class ExecutionCoordinatorTest {
     @Test
     fun messageCommandPausesAtConfirmation() {
         val coordinator = buildCoordinator()
-        val trace = coordinator.run("message Rahul I am late")
+        val trace = runBlocking { coordinator.run("message Rahul I am late") }
 
         assertThat(trace.goal.category).isEqualTo(GoalCategory.DRAFT_MESSAGE)
         assertThat(trace.awaitingConfirmation).isTrue()
@@ -59,7 +60,7 @@ class ExecutionCoordinatorTest {
     @Test
     fun unrecognizedCommandFallsBackToGeneralAppControl() {
         val coordinator = buildCoordinator()
-        val trace = coordinator.run("do something completely unrecognized")
+        val trace = runBlocking { coordinator.run("do something completely unrecognized") }
 
         assertThat(trace.goal.category).isEqualTo(GoalCategory.GENERAL_APP_CONTROL)
         assertThat(trace.entries).isNotEmpty()
@@ -70,7 +71,7 @@ class ExecutionCoordinatorTest {
     @Test
     fun externalActionsAreCollectedAcrossMultipleSteps() {
         val coordinator = buildCoordinator()
-        val trace = coordinator.run("navigate to central park")
+        val trace = runBlocking { coordinator.run("navigate to central park") }
 
         assertThat(trace.goal.category).isEqualTo(GoalCategory.OPEN_MAPS)
         assertThat(trace.externalActions).isNotEmpty()
@@ -80,7 +81,7 @@ class ExecutionCoordinatorTest {
     fun noExecutorAvailableSkipsStep() {
         // Coordinator with no executors
         val coordinator = buildCoordinator(executors = emptyList())
-        val trace = coordinator.run("open Wi-Fi settings")
+        val trace = runBlocking { coordinator.run("open Wi-Fi settings") }
 
         assertThat(trace.entries).hasSize(1)
         assertThat(trace.entries[0].status).isEqualTo(StepStatus.SKIPPED)
@@ -90,7 +91,7 @@ class ExecutionCoordinatorTest {
     @Test
     fun callCommandRequiresConfirmation() {
         val coordinator = buildCoordinator()
-        val trace = coordinator.run("call Mom")
+        val trace = runBlocking { coordinator.run("call Mom") }
 
         assertThat(trace.goal.category).isEqualTo(GoalCategory.PLACE_CALL)
         assertThat(trace.awaitingConfirmation).isTrue()
@@ -99,7 +100,7 @@ class ExecutionCoordinatorTest {
     @Test
     fun playMediaUsesYouTubeSearch() {
         val coordinator = buildCoordinator()
-        val trace = coordinator.run("play lo-fi music")
+        val trace = runBlocking { coordinator.run("play lo-fi music") }
 
         assertThat(trace.goal.category).isEqualTo(GoalCategory.PLAY_MEDIA)
         assertThat(trace.externalActions).hasSize(1)
