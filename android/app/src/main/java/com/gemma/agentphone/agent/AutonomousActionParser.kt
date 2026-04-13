@@ -34,35 +34,39 @@ class AutonomousActionParser {
 
     private fun parseStructuredResponse(responseSummary: String): ExternalActionRequest? {
         val lines = responseSummary.lines().map { it.trim() }.filter { it.isNotBlank() }
+        val thoughtLine = lines.firstOrNull { it.startsWith("THOUGHT:", ignoreCase = true) }
         val actionLine = lines.firstOrNull { it.startsWith("ACTION:", ignoreCase = true) } ?: return null
         val queryLine = lines.firstOrNull { it.startsWith("QUERY:", ignoreCase = true) }
         val textLine = lines.firstOrNull { it.startsWith("TEXT:", ignoreCase = true) }
         val appLine = lines.firstOrNull { it.startsWith("APP:", ignoreCase = true) }
 
+        val thought = thoughtLine?.substringAfter(':')?.trim()
         val action = actionLine.substringAfter(':').trim().uppercase()
         val query = queryLine?.substringAfter(':')?.trim().orEmpty()
         val text = textLine?.substringAfter(':')?.trim().orEmpty()
         val app = appLine?.substringAfter(':')?.trim().orEmpty()
 
         return when (action) {
-            "PLAY_STORE_SEARCH" -> buildPlayStoreSearch(query)
+            "PLAY_STORE_SEARCH" -> buildPlayStoreSearch(query, thought)
             "WEB_SEARCH" -> ExternalActionRequest(
-                IntentSpec(
+                spec = IntentSpec(
                     action = Intent.ACTION_VIEW,
                     data = "https://www.google.com/search?q=${encode(query)}"
-                )
+                ),
+                thought = thought
             )
 
             "OPEN_APP" -> {
                 if (app.isBlank()) null else ExternalActionRequest(
-                    IntentSpec(
+                    spec = IntentSpec(
                         action = Intent.ACTION_MAIN,
                         packageName = app
-                    )
+                    ),
+                    thought = thought
                 )
             }
 
-            "WHATSAPP_MESSAGE" -> buildWhatsAppDraft(text)
+            "WHATSAPP_MESSAGE" -> buildWhatsAppDraft(text, thought)
             else -> null
         }
     }
@@ -101,23 +105,25 @@ class AutonomousActionParser {
         return command.substringAfter("search", command).trim().ifBlank { command.trim() }
     }
 
-    private fun buildPlayStoreSearch(query: String): ExternalActionRequest {
+    private fun buildPlayStoreSearch(query: String, thought: String? = null): ExternalActionRequest {
         val encodedQuery = encode(query.ifBlank { "apps" })
         return ExternalActionRequest(
-            IntentSpec(
+            spec = IntentSpec(
                 action = Intent.ACTION_VIEW,
                 data = "market://search?q=$encodedQuery&c=apps"
-            )
+            ),
+            thought = thought
         )
     }
 
-    private fun buildWhatsAppDraft(message: String): ExternalActionRequest {
+    private fun buildWhatsAppDraft(message: String, thought: String? = null): ExternalActionRequest {
         return ExternalActionRequest(
-            IntentSpec(
+            spec = IntentSpec(
                 action = Intent.ACTION_VIEW,
                 data = "https://wa.me/?text=${encode(message)}",
                 packageName = "com.whatsapp"
-            )
+            ),
+            thought = thought
         )
     }
 

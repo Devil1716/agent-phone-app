@@ -51,7 +51,15 @@ class AccessibilityExecutor(
                         responseSummary = response.summary
                     ) ?: AgentAccessibilityService.dispatchAutonomousAction(response.summary)
 
-                    "Local Gemma suggested the next app-control step: ${response.summary} (Latency: ${response.latencyMs}ms)"
+                    val thought = externalAction?.thought
+                    return StepResult(
+                        stepId = step.id,
+                        status = StepStatus.SUCCESS,
+                        message = "Local Gemma suggested the next app-control step: ${response.summary} (Latency: ${response.latencyMs}ms)",
+                        executorName = "AccessibilityExecutor",
+                        thought = thought,
+                        externalAction = externalAction
+                    )
                 }
             }
 

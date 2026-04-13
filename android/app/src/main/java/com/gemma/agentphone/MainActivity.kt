@@ -346,6 +346,9 @@ class MainActivity : AppCompatActivity() {
             trace.entries.forEach { entry ->
                 appendLine("${statusPrefix(entry)} [${entry.status}] ${entry.description}")
                 appendLine("   Executor: ${entry.executorName}")
+                if (!entry.thought.isNullOrBlank()) {
+                    appendLine("   Thought: ${entry.thought}")
+                }
                 appendLine("   Detail: ${entry.detail}")
                 appendLine()
             }
