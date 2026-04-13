@@ -19,7 +19,6 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
 import com.gemma.agentphone.agent.AgentRuntimeFactory
 import com.gemma.agentphone.agent.AgentOrchestrator
@@ -65,7 +64,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var commandInput: EditText
     private lateinit var historyRepository: ExecutionHistoryRepository
     private lateinit var modelDownloadManager: ModelDownloadManager
-    private lateinit var systemDownloadManager: DownloadManager
     private val updatePrefs by lazy { getSharedPreferences(UPDATE_PREFS, MODE_PRIVATE) }
     private var hasCheckedForUpdates = false
     private var activeUpdateDownloadId: Long? = null
@@ -134,7 +132,6 @@ class MainActivity : AppCompatActivity() {
             )
         )
         modelDownloadManager = ModelDownloadManager(this)
-        systemDownloadManager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
         restorePendingUpdateState()
         registerUpdateDownloadReceiver()
 
@@ -383,7 +380,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkForUpdates() {
-        val updateManager = UpdateManager()
+        val updateManager = UpdateManager(this)
         val fallbackReleaseUrl = updateManager.latestReleasePageUrl()
         updateManager.checkForUpdates(
             onUpdateFound = { version, url ->
@@ -401,7 +398,7 @@ class MainActivity : AppCompatActivity() {
                     updateCard.visibility = android.view.View.VISIBLE
                     downloadButton.setOnClickListener {
                         if (url.endsWith(".apk", ignoreCase = true)) {
-                            downloadAndInstallUpdate(url)
+                            initiateUpdateDownload(url)
                         } else {
                             startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url)))
                         }
@@ -410,36 +407,19 @@ class MainActivity : AppCompatActivity() {
             },
             onNoUpdate = {
                 runOnUiThread {
-                    val updateCard = findViewById<com.google.android.material.card.MaterialCardView>(R.id.updateCard)
-                    val updateText = findViewById<TextView>(R.id.updateText)
-                    val downloadButton = findViewById<MaterialButton>(R.id.downloadUpdateButton)
-                    updateText.text = getString(R.string.update_up_to_date)
-                    downloadButton.text = getString(R.string.update_action_open_release)
-                    downloadButton.setOnClickListener {
-                        startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(fallbackReleaseUrl)))
-                    }
-                    updateCard.visibility = android.view.View.VISIBLE
+                    findViewById<com.google.android.material.card.MaterialCardView>(R.id.updateCard).visibility = android.view.View.GONE
                 }
             },
             onError = {
-                runOnUiThread {
-                    val updateCard = findViewById<com.google.android.material.card.MaterialCardView>(R.id.updateCard)
-                    val updateText = findViewById<TextView>(R.id.updateText)
-                    val downloadButton = findViewById<MaterialButton>(R.id.downloadUpdateButton)
-                    updateText.text = getString(R.string.update_check_failed)
-                    downloadButton.text = getString(R.string.update_action_open_release)
-                    downloadButton.setOnClickListener {
-                        startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(fallbackReleaseUrl)))
-                    }
-                    updateCard.visibility = android.view.View.VISIBLE
-                }
+                // Ignore silent update check errors in Main
             }
         )
     }
 
-    private fun downloadAndInstallUpdate(apkUrl: String) {
+    private fun initiateUpdateDownload(apkUrl: String) {
         pendingUpdateFallbackUrl = apkUrl
         updatePrefs.edit().putString(KEY_PENDING_UPDATE_URL, apkUrl).apply()
+        
         if (!packageManager.canRequestPackageInstalls()) {
             awaitingInstallPermissionGrant = true
             updatePrefs.edit().putBoolean(KEY_AWAITING_INSTALL_PERMISSION, true).apply()
@@ -452,22 +432,13 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        val targetFileName = "gemma-agent-update.apk"
-        val request = DownloadManager.Request(Uri.parse(apkUrl))
-            .setTitle(getString(R.string.update_download_title))
-            .setDescription(getString(R.string.update_download_description))
-            .setMimeType("application/vnd.android.package-archive")
-            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            .setAllowedOverMetered(true)
-            .setAllowedOverRoaming(true)
-            .setDestinationInExternalFilesDir(this, null, targetFileName)
-
-        activeUpdateDownloadId = systemDownloadManager.enqueue(request)
+        val updateManager = UpdateManager(this)
+        activeUpdateDownloadId = updateManager.downloadAndInstallUpdate(apkUrl)
         activeUpdateDownloadId?.let { id ->
             updatePrefs.edit().putLong(KEY_ACTIVE_UPDATE_DOWNLOAD_ID, id).apply()
+            Toast.makeText(this, R.string.update_download_started, Toast.LENGTH_SHORT).show()
         }
         updatePrefs.edit().putBoolean(KEY_AWAITING_INSTALL_PERMISSION, false).apply()
-        Toast.makeText(this, R.string.update_download_started, Toast.LENGTH_SHORT).show()
     }
 
     private fun resumePendingUpdateAfterPermissionGrant() {
@@ -477,7 +448,7 @@ class MainActivity : AppCompatActivity() {
         if (!packageManager.canRequestPackageInstalls()) {
             return
         }
-        pendingUpdateFallbackUrl?.let { downloadAndInstallUpdate(it) }
+        pendingUpdateFallbackUrl?.let { initiateUpdateDownload(it) }
     }
 
     private fun registerUpdateDownloadReceiver() {
@@ -491,63 +462,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleUpdateDownloadComplete(downloadId: Long) {
-        val cursor = systemDownloadManager.query(DownloadManager.Query().setFilterById(downloadId))
-        cursor.use {
-            if (!it.moveToFirst()) {
-                Toast.makeText(this, R.string.update_download_failed, Toast.LENGTH_LONG).show()
-                return
-            }
-            val status = it.getInt(it.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
-            if (status != DownloadManager.STATUS_SUCCESSFUL) {
-                Toast.makeText(this, R.string.update_download_failed, Toast.LENGTH_LONG).show()
-                clearPendingUpdateState()
-                return
-            }
-            val downloadedUri = systemDownloadManager.getUriForDownloadedFile(downloadId)
-            if (downloadedUri != null) {
-                clearPendingUpdateState()
-                launchDownloadedApkInstaller(downloadedUri)
-                return
-            }
-            val localUriString = it.getString(it.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_URI))
-            if (localUriString.isNullOrBlank()) {
-                Toast.makeText(this, R.string.update_download_failed, Toast.LENGTH_LONG).show()
-                clearPendingUpdateState()
-                return
-            }
-            clearPendingUpdateState()
-            launchDownloadedApkInstaller(Uri.parse(localUriString))
-        }
-    }
-
-    private fun launchDownloadedApkInstaller(localUri: Uri) {
-        val apkUri = if (localUri.scheme == "content") {
-            localUri
-        } else {
-            val file = File(localUri.path.orEmpty())
-            if (!file.exists()) {
-                Toast.makeText(this, R.string.update_install_failed, Toast.LENGTH_LONG).show()
-                return
-            }
-            FileProvider.getUriForFile(
-                this,
-                "${BuildConfig.APPLICATION_ID}.fileprovider",
-                file
-            )
-        }
-        val installIntent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(apkUri, "application/vnd.android.package-archive")
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        try {
-            startActivity(installIntent)
-        } catch (_: Exception) {
-            Toast.makeText(this, R.string.update_install_failed, Toast.LENGTH_LONG).show()
-            pendingUpdateFallbackUrl?.let { fallback ->
-                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(fallback)))
-            }
-        }
+        UpdateManager(this).installDownloadedUpdate(downloadId)
+        clearPendingUpdateState()
     }
 
     private fun restorePendingUpdateState() {

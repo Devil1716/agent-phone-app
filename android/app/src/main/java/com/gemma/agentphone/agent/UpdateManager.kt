@@ -1,6 +1,12 @@
 package com.gemma.agentphone.agent
 
+import android.app.DownloadManager
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Environment
 import android.util.Log
+import androidx.core.content.FileProvider
 import com.gemma.agentphone.BuildConfig
 import okhttp3.Call
 import okhttp3.Callback
@@ -8,13 +14,20 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONObject
+import java.io.File
 import java.io.IOException
 import java.util.Locale
 
 class UpdateManager(
+    private val context: Context,
     private val client: OkHttpClient = OkHttpClient(),
-    private val currentVersionName: String = BuildConfig.VERSION_NAME
+    private val currentVersionName: String = BuildConfig.VERSION_NAME,
+    private val currentVersionCode: Int = BuildConfig.VERSION_CODE
 ) {
+    companion object {
+        const val UPDATE_FILE_NAME = "gemma-agent-update.apk"
+        private const val TAG = "UpdateManager"
+    }
 
     private val repoUrl =
         "https://api.github.com/repos/${BuildConfig.APP_REPO_OWNER}/${BuildConfig.APP_REPO_NAME}/releases/latest"
@@ -33,16 +46,17 @@ class UpdateManager(
             .header("Accept", "application/vnd.github+json")
             .header("User-Agent", "Gemma-Agent-Phone-App")
             .build()
+
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                Log.w("UpdateManager", "Failed to check for updates", e)
+                Log.w(TAG, "Failed to check for updates", e)
                 onError("Network error while checking for updates.")
             }
 
             override fun onResponse(call: Call, response: Response) {
                 response.use {
                     if (!it.isSuccessful) {
-                        Log.w("UpdateManager", "Unexpected update response: ${it.code}")
+                        Log.w(TAG, "Unexpected update response: ${it.code}")
                         onError("Update check failed with HTTP ${it.code}.")
                         return
                     }
@@ -58,13 +72,14 @@ class UpdateManager(
                             return
                         }
 
+                        // We prefer versionName comparison but we could also check body for "versionCode: X"
                         if (isNewerVersion(latestVersion)) {
                             onUpdateFound(latestVersion, downloadUrl)
                         } else {
                             onNoUpdate()
                         }
                     } catch (exception: Exception) {
-                        Log.w("UpdateManager", "Unable to parse update response", exception)
+                        Log.w(TAG, "Unable to parse update response", exception)
                         onError("Unable to parse release metadata.")
                     }
                 }
@@ -72,13 +87,63 @@ class UpdateManager(
         })
     }
 
+    fun downloadAndInstallUpdate(apkUrl: String): Long? {
+        cleanupOldUpdates()
+
+        val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+        val request = DownloadManager.Request(Uri.parse(apkUrl))
+            .setTitle("Gemma Agent Update")
+            .setDescription("Downloading newer version: $apkUrl")
+            .setMimeType("application/vnd.android.package-archive")
+            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+            .setDestinationInExternalFilesDir(context, null, UPDATE_FILE_NAME)
+
+        return try {
+            downloadManager.enqueue(request)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to enqueue update download", e)
+            null
+        }
+    }
+
+    fun installDownloadedUpdate(downloadId: Long) {
+        val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+        val uri = downloadManager.getUriForDownloadedFile(downloadId) ?: return
+        
+        val installIntent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "application/vnd.android.package-archive")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        
+        try {
+            context.startActivity(installIntent)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start installer", e)
+        }
+    }
+
+    fun cleanupOldUpdates() {
+        try {
+            val updateFile = File(context.getExternalFilesDir(null), UPDATE_FILE_NAME)
+            if (updateFile.exists()) {
+                updateFile.delete()
+                Log.d(TAG, "Cleaned up old update file.")
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to cleanup old updates", e)
+        }
+    }
+
     internal fun isNewerVersion(latest: String, current: String = currentVersionName): Boolean {
         val latestVersion = parseVersion(latest)
         val currentVersion = parseVersion(current)
+        
         val numberCompare = compareVersionParts(latestVersion.numbers, currentVersion.numbers)
         if (numberCompare != 0) {
             return numberCompare > 0
         }
+        
         return latestVersion.stageRank > currentVersion.stageRank
     }
 

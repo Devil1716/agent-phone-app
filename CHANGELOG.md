@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0] - 2026-04-13
+
+### Added
+- **Manus-Inspired Agent Core**: Implementation of an iterative "Thought-Action-Observation" reasoning loop for complex tasks.
+- **Richer Interaction Grammar**: Added support for `SCROLL_UP`, `SCROLL_DOWN`, `LONG_PRESS`, and precision coordinate tapping.
+- **Robust Update System**: Refactored the in-app update mechanism into a dedicated service with automatic file cleanup and safer installation flows.
+
+### Changed
+- Refined `AutonomousPromptComposer` to enforce step-by-step reasoning (`THOUGHT:` field).
+- Decoupled update download and installation logic from `MainActivity` for better maintainability.
+
 ## [0.3.10] - 2026-04-10
 
 ### Fixed
