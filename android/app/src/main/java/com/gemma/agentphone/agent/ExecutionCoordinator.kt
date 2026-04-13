@@ -106,7 +106,14 @@ class ExecutionCoordinator(
                         try {
                             val result = executor.execute(step, observation)
                             result.externalAction?.let(externalActions::add)
-                            entries += TraceEntry(step.id, step.description, result.status, result.executorName, result.thought, result.message)
+                            entries += TraceEntry(
+                                stepId = step.id,
+                                description = step.description,
+                                status = result.status,
+                                executorName = result.executorName,
+                                thought = result.thought,
+                                detail = result.message
+                            )
                             
                             // Update observation if the step succeeded
                             if (result.status == StepStatus.SUCCESS) {
