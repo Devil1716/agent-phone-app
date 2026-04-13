@@ -24,13 +24,26 @@ class AndroidInstalledAppResolver(context: Context) : InstalledAppResolver {
 
     override fun resolve(query: String): ResolvedAppLaunch? {
         val normalizedQuery = query.normalizeForMatch()
+        val tightQuery = query.tightNormalize()
+        
         if (normalizedQuery.isBlank()) {
             return null
         }
 
-        return launchableApps.firstOrNull { it.label.normalizeForMatch() == normalizedQuery }
-            ?: launchableApps.firstOrNull { it.packageName.substringAfterLast('.').normalizeForMatch() == normalizedQuery }
-            ?: launchableApps.firstOrNull { it.label.normalizeForMatch().startsWith(normalizedQuery) }
+        // 1. Exact match with standard normalization
+        val standardMatch = launchableApps.firstOrNull { it.label.normalizeForMatch() == normalizedQuery }
+        if (standardMatch != null) return standardMatch
+
+        // 2. Match with "tight" normalization (removes all spaces)
+        val tightMatch = launchableApps.firstOrNull { it.label.tightNormalize() == tightQuery }
+        if (tightMatch != null) return tightMatch
+
+        // 3. Package name fallback
+        val pkgMatch = launchableApps.firstOrNull { it.packageName.substringAfterLast('.').normalizeForMatch() == normalizedQuery }
+        if (pkgMatch != null) return pkgMatch
+
+        // 4. Fuzzy startsWith/contains
+        return launchableApps.firstOrNull { it.label.normalizeForMatch().startsWith(normalizedQuery) }
             ?: launchableApps.firstOrNull { it.label.normalizeForMatch().contains(normalizedQuery) }
     }
 
@@ -46,6 +59,12 @@ class AndroidInstalledAppResolver(context: Context) : InstalledAppResolver {
     private fun String.normalizeForMatch(): String {
         return lowercase()
             .replace(Regex("[^a-z0-9]+"), " ")
+            .trim()
+    }
+
+    private fun String.tightNormalize(): String {
+        return lowercase()
+            .replace(Regex("[^a-z0-9]+"), "")
             .trim()
     }
 }

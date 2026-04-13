@@ -71,30 +71,48 @@ class AgentAccessibilityService : AccessibilityService() {
     }
 
     private fun refreshSnapshot(packageNameHint: String? = null) {
-        val root = rootInActiveWindow
-        val visibleText = mutableListOf<String>()
-        collectText(root, visibleText)
+        val root = rootInActiveWindow ?: return
+        try {
+            val visibleText = mutableListOf<String>()
+            collectText(root, visibleText, 0)
 
-        latestSnapshot = ScreenObservation(
-            foregroundApp = packageNameHint
-                ?: root?.packageName?.toString()
-                ?: packageName
-                ?: "unknown",
-            visibleText = visibleText.distinct().take(40),
-            timestampMs = System.currentTimeMillis()
-        )
+            latestSnapshot = ScreenObservation(
+                foregroundApp = packageNameHint
+                    ?: root.packageName?.toString()
+                    ?: packageName
+                    ?: "unknown",
+                visibleText = visibleText.distinct().take(40),
+                timestampMs = System.currentTimeMillis()
+            )
+        } catch (e: Exception) {
+            // Log or handle error to prevent crash
+        } finally {
+            try {
+                root.recycle()
+            } catch (_: Exception) {}
+        }
     }
 
-    private fun collectText(node: AccessibilityNodeInfo?, sink: MutableList<String>) {
-        if (node == null || sink.size >= 40) {
+    private fun collectText(node: AccessibilityNodeInfo?, sink: MutableList<String>, depth: Int) {
+        if (node == null || sink.size >= 40 || depth > 25) {
             return
         }
 
-        node.text?.toString()?.trim()?.takeIf { it.isNotBlank() }?.let(sink::add)
-        node.contentDescription?.toString()?.trim()?.takeIf { it.isNotBlank() }?.let(sink::add)
+        try {
+            node.text?.toString()?.trim()?.takeIf { it.isNotBlank() }?.let(sink::add)
+            node.contentDescription?.toString()?.trim()?.takeIf { it.isNotBlank() }?.let(sink::add)
 
-        for (index in 0 until node.childCount) {
-            collectText(node.getChild(index), sink)
+            for (index in 0 until node.childCount) {
+                val child = node.getChild(index)
+                if (child != null) {
+                    collectText(child, sink, depth + 1)
+                    try {
+                        child.recycle()
+                    } catch (_: Exception) {}
+                }
+            }
+        } catch (e: Exception) {
+            // Prevent traversal errors from crashing the service
         }
     }
 
