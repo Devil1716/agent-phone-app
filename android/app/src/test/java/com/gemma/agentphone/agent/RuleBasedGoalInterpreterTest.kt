@@ -22,4 +22,28 @@ class RuleBasedGoalInterpreterTest {
         assertThat(goal.category).isEqualTo(GoalCategory.WEB_SEARCH)
         assertThat(goal.targetValue).contains("Gemma Android automation")
     }
+
+    @Test
+    fun parsesSingleWordAsAppTarget() {
+        val goal = interpreter.interpret("calculator")
+
+        assertThat(goal.category).isEqualTo(GoalCategory.GENERAL_APP_CONTROL)
+        assertThat(goal.targetApp).isEqualTo("calculator")
+    }
+
+    @Test
+    fun parsesWhatsAppMessageCommand() {
+        val goal = interpreter.interpret("send hello from Gemma on WhatsApp")
+
+        assertThat(goal.category).isEqualTo(GoalCategory.DRAFT_MESSAGE)
+        assertThat(goal.targetApp).isEqualTo("whatsapp")
+        assertThat(goal.targetValue).contains("hello from Gemma")
+    }
+
+    @Test
+    fun playStoreCommandDoesNotGetClassifiedAsMedia() {
+        val goal = interpreter.interpret("download Spotify from Play Store")
+
+        assertThat(goal.category).isEqualTo(GoalCategory.GENERAL_APP_CONTROL)
+    }
 }

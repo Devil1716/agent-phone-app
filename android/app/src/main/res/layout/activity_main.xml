@@ -1,89 +1,284 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/background">
 
-    <LinearLayout
+    <!-- Subtle Background Glow (Top Left) -->
+    <View
+        android:layout_width="300dp"
+        android:layout_height="300dp"
+        android:background="@drawable/glass_card_bg"
+        android:alpha="0.1"
+        android:rotation="45"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="-150dp"
+        android:layout_marginStart="-150dp" />
+
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="24dp">
-
-        <TextView
-            android:id="@+id/titleText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/app_name"
-            android:textSize="26sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/summaryText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="@string/main_summary"
-            android:textSize="16sp" />
-
-        <TextView
-            android:id="@+id/statusText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:textSize="16sp" />
-
-        <EditText
-            android:id="@+id/commandInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:hint="@string/command_hint"
-            android:inputType="textMultiLine"
-            android:minLines="3" />
+        android:layout_height="match_parent">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:orientation="horizontal">
+            android:orientation="vertical"
+            android:padding="24dp">
 
-            <Button
-                android:id="@+id/runCommandButton"
-                android:layout_width="0dp"
+            <!-- Header Section -->
+            <RelativeLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/run_command" />
+                android:layout_marginBottom="32dp">
 
-            <Button
-                android:id="@+id/stopCommandButton"
-                android:layout_width="0dp"
+                <TextView
+                    android:id="@+id/titleText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Gemma Agent"
+                    android:textColor="@color/onBackground"
+                    android:textSize="28sp"
+                    android:fontFamily="sans-serif-medium" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/titleText"
+                    android:text="Manus-style Mobile Controller"
+                    android:textColor="@color/onBackground"
+                    android:alpha="0.6"
+                    android:textSize="14sp" />
+
+                <ImageButton
+                    android:id="@+id/historyButton"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:background="@drawable/glass_card_bg"
+                    android:src="@android:drawable/ic_menu_recent_history"
+                    app:tint="@color/primary" />
+            </RelativeLayout>
+
+            <!-- Command Input Glass Card -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/glass_card_bg"
+                android:orientation="vertical"
+                android:padding="20dp"
+                android:layout_marginBottom="24dp">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Tell the agent what to do..."
+                    app:hintTextColor="@color/primary"
+                    app:boxStrokeWidth="0dp"
+                    app:boxStrokeWidthFocused="0dp"
+                    android:theme="@style/Widget.MaterialComponents.TextInputLayout.FilledBox.Dense">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/commandInput"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@android:color/transparent"
+                        android:textColor="@color/onBackground"
+                        android:inputType="textMultiLine"
+                        android:minLines="3"
+                        android:gravity="top"
+                        android:textSize="16sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/runCommandButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Initiate"
+                        android:textColor="@color/onPrimary"
+                        app:backgroundTint="@color/primary"
+                        app:cornerRadius="16dp"
+                        app:icon="@android:drawable/ic_media_play" />
+
+                    <ImageButton
+                        android:id="@+id/voiceInputButton"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_toEndOf="@id/runCommandButton"
+                        android:layout_marginStart="12dp"
+                        android:background="@drawable/glass_card_bg"
+                        android:src="@android:drawable/ic_btn_speak_now"
+                        app:tint="@color/primary" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/openSettingsButton"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_alignParentEnd="true"
+                        android:background="@drawable/glass_card_bg"
+                        style="@style/Widget.MaterialComponents.Button.TextButton"
+                        app:icon="@android:drawable/ic_menu_preferences"
+                        app:iconTint="@string/onboarding_model_source_button"
+                        app:iconPadding="0dp"
+                        android:padding="0dp"
+                        tools:ignore="ContentDescription" />
+                </RelativeLayout>
+            </LinearLayout>
+
+            <!-- Quick Stats Section -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="24dp">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/glass_card_bg"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Status"
+                        android:textSize="12sp"
+                        android:alpha="0.6" />
+                    <TextView
+                        android:id="@+id/statusText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Ready"
+                        android:textColor="@color/primary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <View android:layout_width="12dp" android:layout_height="1dp" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1.2"
+                    android:background="@drawable/glass_card_bg"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Model"
+                        android:textSize="12sp"
+                        android:alpha="0.6" />
+                    <TextView
+                        android:id="@+id/modelStatusText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Gemma 1.1b"
+                        android:textColor="@color/onBackground"
+                        android:textSize="13sp"
+                        android:maxLines="1"
+                        android:ellipsize="end" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Floating-style Execution Trace -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Recent Execution"
+                android:textColor="@color/onBackground"
+                android:alpha="0.8"
+                android:layout_marginBottom="12dp"
+                android:textSize="14sp" />
+
+            <LinearLayout
+                android:id="@+id/traceCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/glass_card_bg"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:id="@+id/traceText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:textSize="12sp"
+                    android:alpha="0.9"
+                    android:text="No active execution yet."
+                    android:textColor="@color/onBackground" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Manus-style Live Thinking Overlay (Hidden by default) -->
+    <LinearLayout
+        android:id="@+id/thinkingOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/glass_card_bg"
+        android:layout_margin="24dp"
+        android:orientation="vertical"
+        android:padding="20dp"
+        android:visibility="gone"
+        android:elevation="8dp"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+            
+            <com.google.android.material.progressindicator.CircularProgressIndicator
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:indeterminate="true"
+                app:indicatorSize="20dp"
+                app:indicatorColor="@color/primary"
+                app:trackThickness="2dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="12dp"
-                android:layout_weight="1"
-                android:text="@string/stop_command" />
+                android:text="Gemma is thinking..."
+                android:textColor="@color/primary"
+                android:textStyle="bold"
+                android:textSize="14sp" />
         </LinearLayout>
 
-        <Button
-            android:id="@+id/openSettingsButton"
+        <TextView
+            android:id="@+id/liveThoughtText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="@string/open_settings" />
+            android:textColor="@color/onBackground"
+            android:textSize="13sp"
+            android:alpha="0.9"
+            android:maxLines="3"
+            android:ellipsize="end" />
 
         <TextView
-            android:id="@+id/traceTitleText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="@string/execution_trace"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/traceText"
+            android:id="@+id/liveActionText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:textIsSelectable="true" />
+            android:textColor="@color/primary"
+            android:textSize="12sp"
+            android:textStyle="italic" />
+
     </LinearLayout>
-</ScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

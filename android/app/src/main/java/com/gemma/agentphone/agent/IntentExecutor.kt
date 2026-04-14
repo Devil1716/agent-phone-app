@@ -1,6 +1,10 @@
 package com.gemma.agentphone.agent
 
 class IntentExecutor : ActionExecutor {
+    companion object {
+        private const val WHATSAPP_PACKAGE = "com.whatsapp"
+    }
+
     override fun canExecute(step: TaskStep): Boolean {
         return step.type in listOf(StepType.OPEN_SYSTEM_SETTINGS, StepType.OPEN_MAPS, StepType.DRAFT_MESSAGE)
     }
@@ -12,7 +16,7 @@ class IntentExecutor : ActionExecutor {
                 status = StepStatus.SUCCESS,
                 message = "Prepared Wi-Fi settings intent",
                 executorName = "IntentExecutor",
-                externalAction = ExternalActionRequest(IntentSpec(action = "android.settings.WIFI_SETTINGS"))
+                externalAction = ExternalActionRequest(spec = IntentSpec(action = "android.settings.WIFI_SETTINGS"))
             )
 
             StepType.OPEN_MAPS -> {
@@ -23,7 +27,7 @@ class IntentExecutor : ActionExecutor {
                     message = "Prepared maps navigation intent",
                     executorName = "IntentExecutor",
                     externalAction = ExternalActionRequest(
-                        IntentSpec(
+                        spec = IntentSpec(
                             action = "android.intent.action.VIEW",
                             data = "google.navigation:q=$query"
                         )
@@ -32,22 +36,43 @@ class IntentExecutor : ActionExecutor {
             }
 
             StepType.DRAFT_MESSAGE -> {
-                val body = (step.payload ?: "").replace(" ", "%20")
-                StepResult(
-                    stepId = step.id,
-                    status = StepStatus.SUCCESS,
-                    message = "Prepared SMS draft intent",
-                    executorName = "IntentExecutor",
-                    externalAction = ExternalActionRequest(
-                        IntentSpec(
-                            action = "android.intent.action.SENDTO",
-                            data = "smsto:?body=$body"
+                val body = java.net.URLEncoder.encode(step.payload ?: "", Charsets.UTF_8.name())
+                if (step.targetApp.equals("whatsapp", ignoreCase = true)) {
+                    StepResult(
+                        stepId = step.id,
+                        status = StepStatus.SUCCESS,
+                        message = "Prepared WhatsApp draft intent",
+                        executorName = "IntentExecutor",
+                        externalAction = ExternalActionRequest(
+                            spec = IntentSpec(
+                                action = "android.intent.action.VIEW",
+                                data = "https://wa.me/?text=$body",
+                                packageName = WHATSAPP_PACKAGE
+                            )
                         )
                     )
-                )
+                } else {
+                    StepResult(
+                        stepId = step.id,
+                        status = StepStatus.SUCCESS,
+                        message = "Prepared SMS draft intent",
+                        executorName = "IntentExecutor",
+                        externalAction = ExternalActionRequest(
+                            spec = IntentSpec(
+                                action = "android.intent.action.SENDTO",
+                                data = "smsto:?body=$body"
+                            )
+                        )
+                    )
+                }
             }
 
-            else -> StepResult(step.id, StepStatus.SKIPPED, "Intent executor skipped", "IntentExecutor")
+            else -> StepResult(
+                stepId = step.id,
+                status = StepStatus.SKIPPED,
+                message = "Intent executor skipped",
+                executorName = "IntentExecutor"
+            )
         }
     }
 }

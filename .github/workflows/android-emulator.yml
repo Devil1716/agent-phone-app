@@ -12,6 +12,7 @@ env:
 jobs:
   android-emulator:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Check out repository
@@ -27,8 +28,11 @@ jobs:
       - name: Run connected Android tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 34
+          api-level: 33
           arch: x86_64
-          profile: pixel_6
+          profile: pixel_2
+          disable-animations: true
+          force-avd-creation: false
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           working-directory: android
-          script: chmod +x gradlew && ./gradlew connectedDebugAndroidTest
+          script: chmod +x gradlew && ./gradlew connectedDebugAndroidTest --stacktrace --info --no-daemon
