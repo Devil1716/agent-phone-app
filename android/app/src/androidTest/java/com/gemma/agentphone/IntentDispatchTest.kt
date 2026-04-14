@@ -78,24 +78,25 @@ class IntentDispatchTest {
         val start = System.currentTimeMillis()
         while (System.currentTimeMillis() - start < timeoutMs) {
             InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+            
+            // Check results frequently
             if (launchedSpecs.isNotEmpty()) {
                 return
             }
 
-            // Check for agent errors in the UI to fail early if initialization fails
-            var errorText = ""
+            // Detect errors in the UI trace to fail fast with context
+            var statusText = ""
             activityRule.scenario.onActivity { activity ->
-                val trace = activity.findViewById<TextView>(R.id.traceText).text.toString()
-                if (trace.contains("Error running the agent") || trace.contains("local Gemma runtime is not ready")) {
-                    errorText = trace
-                }
+                statusText = activity.findViewById<TextView>(R.id.traceText).text.toString()
             }
-            if (errorText.isNotBlank()) {
-                // Return early so the test fails properly (launchedSpecs remains empty)
+            
+            if (statusText.contains("Error running the agent") || statusText.contains("local Gemma runtime is not ready")) {
+                // If it's a known environmental failure, we gracefully exit so we don't hang
+                // the CI runner for 20 seconds. 
                 return
             }
 
-            Thread.sleep(500)
+            Thread.sleep(200) // Faster polling for emulator resilience
         }
     }
 }

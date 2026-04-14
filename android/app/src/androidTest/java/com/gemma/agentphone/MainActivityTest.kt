@@ -40,7 +40,7 @@ class MainActivityTest {
             if (isSuccessful || isAiError) {
                 break
             }
-            Thread.sleep(500)
+            Thread.sleep(200) // Nuclear polling frequency
         }
 
         // In CI/emulators, the local runtime may not be ready due to hardware limits.
