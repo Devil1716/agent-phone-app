@@ -14,7 +14,7 @@ class UpdateManager {
 
     private val client = OkHttpClient()
     private val repoUrl =
-        "https://api.github.com/repos/${BuildConfig.APP_REPO_OWNER}/${BuildConfig.APP_REPO_NAME}/releases/latest"
+        "https://api.github.com/repos/${BuildConfig.APP_REPO_OWNER}/${BuildConfig.APP_REPO_NAME}/releases"
 
     fun checkForUpdates(onUpdateFound: (version: String, url: String) -> Unit) {
         val request = Request.Builder()
@@ -36,7 +36,10 @@ class UpdateManager {
                     }
 
                     val body = it.body?.string().orEmpty()
-                    val json = JSONObject(body)
+                    val jsonArray = org.json.JSONArray(body)
+                    if (jsonArray.length() == 0) return
+
+                    val json = jsonArray.getJSONObject(0)
                     val latestVersion = json.optString("tag_name", "")
                     
                     // Try to find a direct APK download link in assets first

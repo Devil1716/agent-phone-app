@@ -257,23 +257,31 @@ class MainActivity : AppCompatActivity() {
         return when (val status = modelDownloadManager.getStatus()) {
             is ModelDownloadStatus.Ready -> {
                 modelStatusTextView.text = "Gemma 4 · Ready"
+                modelStatusTextView.setOnClickListener(null)
                 false
             }
 
             is ModelDownloadStatus.Downloading -> {
                 modelStatusTextView.text = "Downloading · ${status.progress}%"
+                modelStatusTextView.setOnClickListener(null)
                 modelStatusHandler.removeCallbacks(modelStatusRunnable)
                 modelStatusHandler.postDelayed(modelStatusRunnable, 1_000)
                 true
             }
 
             is ModelDownloadStatus.Failed -> {
-                modelStatusTextView.text = "Model · Error"
+                modelStatusTextView.text = "Model · Error (Tap)"
+                modelStatusTextView.setOnClickListener {
+                    Toast.makeText(this@MainActivity, status.message, Toast.LENGTH_LONG).show()
+                }
                 false
             }
 
             ModelDownloadStatus.Missing -> {
-                modelStatusTextView.text = "Model · Not Found"
+                modelStatusTextView.text = "Model · Tap to Download"
+                modelStatusTextView.setOnClickListener {
+                    startModelDownload()
+                }
                 false
             }
         }
