@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.3] - 2026-04-14
+
+### Fixed
+- **App Conflicts** — Permanently removed `applicationIdSuffix` from debug/alpha builds. All builds now use `com.gemma.agentphone`, enabling seamless updates without uninstalls.
+- **In-App Updates** — Rewrote `UpdateManager` to pull from the general releases list instead of the restricted `latest` endpoint, ensuring automated pre-releases are detected.
+- **Download Visibility** — Model download status text is now interactive. Tapping an "Error" status surfaces the exact failure reason (e.g., 401 Unauthorized, Insufficient Space).
+
+## [0.5.2] - 2026-04-14
+
+### Added
+- **LLM-Driven Orchestration** — Introduced `LlmGoalInterpreter` which uses Gemma 4 to classifies user commands into categories (Web Search, App Control, etc.) with JSON extraction.
+- **True Autonomous Agent Control** — Ambiguous or complex instructions now bypass rigid "one-shot" app launches and route directly to the `AccessibilityExecutor`.
+- **Autonomous Feedback Loop** — The agent now "sees" the screen, thinks, taps, and reviews visuals in a loop until the goal is achieved.
+
 ## [0.5.0] - 2026-04-14
 
 ### Added
