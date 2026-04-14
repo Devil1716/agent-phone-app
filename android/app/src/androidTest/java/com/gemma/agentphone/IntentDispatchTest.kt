@@ -14,11 +14,13 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import com.google.common.truth.Truth.assertThat
+import android.widget.TextView
+import java.util.concurrent.CopyOnWriteArrayList
 
 @RunWith(AndroidJUnit4::class)
 @LargeTest
 class IntentDispatchTest {
-    private val launchedSpecs = mutableListOf<com.gemma.agentphone.agent.IntentSpec>()
+    private val launchedSpecs = CopyOnWriteArrayList<com.gemma.agentphone.agent.IntentSpec>()
 
     @get:Rule
     val activityRule = ActivityScenarioRule(MainActivity::class.java)
@@ -79,6 +81,20 @@ class IntentDispatchTest {
             if (launchedSpecs.isNotEmpty()) {
                 return
             }
+
+            // Check for agent errors in the UI to fail early if initialization fails
+            var errorText = ""
+            activityRule.scenario.onActivity { activity ->
+                val trace = activity.findViewById<TextView>(R.id.traceText).text.toString()
+                if (trace.contains("Error running the agent") || trace.contains("local Gemma runtime is not ready")) {
+                    errorText = trace
+                }
+            }
+            if (errorText.isNotBlank()) {
+                // Return early so the test fails properly (launchedSpecs remains empty)
+                return
+            }
+
             Thread.sleep(500)
         }
     }
