@@ -8,12 +8,30 @@ class RuleBasedGoalInterpreter : GoalInterpreter {
         val normalized = input.trim().lowercase()
 
         return when {
+            normalized.contains("play store") || normalized.contains("google play") -> {
+                UserGoal(input, GoalCategory.GENERAL_APP_CONTROL, requiresFastPath = false)
+            }
+
             normalized.contains("wi-fi") || normalized.contains("wifi") -> {
                 UserGoal(input, GoalCategory.OPEN_SETTINGS, targetApp = "android.settings", targetValue = "wifi")
             }
 
-            normalized.startsWith("message ") -> {
-                UserGoal(input, GoalCategory.DRAFT_MESSAGE, targetApp = "sms", targetValue = input.substringAfter("message ").trim())
+            isWhatsAppMessageCommand(normalized) -> {
+                UserGoal(
+                    input,
+                    GoalCategory.DRAFT_MESSAGE,
+                    targetApp = "whatsapp",
+                    targetValue = extractMessageBody(input)
+                )
+            }
+
+            normalized.startsWith("message ") || normalized.startsWith("send ") -> {
+                UserGoal(
+                    input,
+                    GoalCategory.DRAFT_MESSAGE,
+                    targetApp = "sms",
+                    targetValue = extractMessageBody(input)
+                )
             }
 
             normalized.startsWith("call ") -> {
@@ -41,7 +59,30 @@ class RuleBasedGoalInterpreter : GoalInterpreter {
                 UserGoal(input, GoalCategory.GENERAL_APP_CONTROL, targetApp = input.substringAfter("open ").trim(), requiresFastPath = false)
             }
 
-            else -> UserGoal(input, GoalCategory.UNSUPPORTED, requiresFastPath = false)
+            normalized.matches(Regex("[a-z0-9 ._-]{2,}")) && !normalized.contains(" ") -> {
+                UserGoal(input, GoalCategory.GENERAL_APP_CONTROL, targetApp = input.trim(), requiresFastPath = false)
+            }
+
+            else -> UserGoal(input, GoalCategory.GENERAL_APP_CONTROL, requiresFastPath = false)
+        }
+    }
+
+    private fun isWhatsAppMessageCommand(normalized: String): Boolean {
+        val mentionsWhatsApp = normalized.contains("whatsapp") || normalized.contains("whats app")
+        val isMessageIntent = normalized.startsWith("message ") ||
+            normalized.startsWith("send ") ||
+            normalized.contains("send the message") ||
+            normalized.contains("send a message")
+
+        return mentionsWhatsApp && isMessageIntent
+    }
+
+    private fun extractMessageBody(input: String): String {
+        val trimmed = input.trim()
+        return when {
+            trimmed.startsWith("message ", ignoreCase = true) -> trimmed.substringAfter("message ").trim()
+            trimmed.startsWith("send ", ignoreCase = true) -> trimmed.substringAfter("send ").trim()
+            else -> trimmed
         }
     }
 }

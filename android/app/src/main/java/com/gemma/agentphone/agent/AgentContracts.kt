@@ -33,6 +33,7 @@ data class StepResult(
     val status: StepStatus,
     val message: String,
     val executorName: String,
+    val thought: String? = null,
     val externalAction: ExternalActionRequest? = null
 )
 
@@ -41,6 +42,7 @@ data class TraceEntry(
     val description: String,
     val status: StepStatus,
     val executorName: String,
+    val thought: String? = null,
     val detail: String
 )
 
@@ -54,7 +56,8 @@ data class ExecutionTrace(
 )
 
 data class ExternalActionRequest(
-    val spec: IntentSpec
+    val spec: IntentSpec,
+    val thought: String? = null
 )
 
 data class IntentSpec(
@@ -85,6 +88,7 @@ enum class ExecutionStrategy {
 }
 
 enum class StepType {
+    OPEN_APP,
     OPEN_SYSTEM_SETTINGS,
     OPEN_MAPS,
     OPEN_BROWSER_SEARCH,
@@ -92,6 +96,7 @@ enum class StepType {
     DRAFT_MESSAGE,
     REQUEST_CONFIRMATION,
     SUMMARIZE_NOTIFICATIONS,
+    EXECUTE_AUTONOMOUSLY,
     REPORT_RESULT,
     UNSUPPORTED
 }

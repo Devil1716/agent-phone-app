@@ -1,5 +1,7 @@
 package com.gemma.agentphone.agent
 
+import kotlinx.coroutines.delay
+
 class ExecutionCoordinator(
     private val goalInterpreter: GoalInterpreter,
     private val taskPlanner: TaskPlanner,
@@ -7,9 +9,16 @@ class ExecutionCoordinator(
     private val observationService: ObservationService,
     private val executors: List<ActionExecutor>
 ) {
-    fun run(command: String): ExecutionTrace {
+    companion object {
+        private const val MAX_AUTONOMOUS_STEPS = 5
+    }
+
+    suspend fun run(
+        command: String,
+        onProgress: ((TraceEntry) -> Unit)? = null
+    ): ExecutionTrace {
         val goal = goalInterpreter.interpret(command)
-        val observation = observationService.capture()
+        var observation = observationService.capture()
         val plan = taskPlanner.plan(goal, observation)
         val entries = mutableListOf<TraceEntry>()
         val externalActions = mutableListOf<ExternalActionRequest>()
@@ -18,12 +27,28 @@ class ExecutionCoordinator(
             val decision = policyEngine.classify(step)
             when (decision.action) {
                 PolicyAction.BLOCK -> {
-                    entries += TraceEntry(step.id, step.description, StepStatus.BLOCKED, "PolicyEngine", decision.reason)
+                    val entry = TraceEntry(
+                        stepId = step.id,
+                        description = step.description,
+                        status = StepStatus.BLOCKED,
+                        executorName = "PolicyEngine",
+                        detail = decision.reason
+                    )
+                    entries += entry
+                    onProgress?.invoke(entry)
                     return ExecutionTrace(goal, plan.strategy, entries, "Blocked: ${step.description}")
                 }
 
                 PolicyAction.REQUIRE_CONFIRMATION -> {
-                    entries += TraceEntry(step.id, step.description, StepStatus.PENDING_CONFIRMATION, "PolicyEngine", decision.reason)
+                    val entry = TraceEntry(
+                        stepId = step.id,
+                        description = step.description,
+                        status = StepStatus.PENDING_CONFIRMATION,
+                        executorName = "PolicyEngine",
+                        detail = decision.reason
+                    )
+                    entries += entry
+                    onProgress?.invoke(entry)
                     return ExecutionTrace(
                         goal = goal,
                         strategy = plan.strategy,
@@ -37,13 +62,86 @@ class ExecutionCoordinator(
                 PolicyAction.ALLOW -> {
                     val executor = executors.firstOrNull { it.canExecute(step) }
                     if (executor == null) {
-                        entries += TraceEntry(step.id, step.description, StepStatus.SKIPPED, "ExecutionCoordinator", "No executor available")
+                        val entry = TraceEntry(
+                            stepId = step.id,
+                            description = step.description,
+                            status = StepStatus.SKIPPED,
+                            executorName = "ExecutionCoordinator",
+                            detail = "No executor available"
+                        )
+                        entries += entry
+                        onProgress?.invoke(entry)
                         continue
                     }
 
-                    val result = executor.execute(step, observation)
-                    result.externalAction?.let(externalActions::add)
-                    entries += TraceEntry(step.id, step.description, result.status, result.executorName, result.message)
+                    if (step.type == StepType.EXECUTE_AUTONOMOUSLY) {
+                        // Iterative loop for autonomous control
+                        var currentStepObservation = observation
+                        for (i in 1..MAX_AUTONOMOUS_STEPS) {
+                            try {
+                                val result = executor.execute(step, currentStepObservation)
+                                result.externalAction?.let(externalActions::add)
+                                val entry = TraceEntry(
+                                    stepId = "${step.id}_$i",
+                                    description = "[Step $i] ${step.description}",
+                                    status = result.status,
+                                    executorName = result.executorName,
+                                    thought = result.thought,
+                                    detail = result.message
+                                )
+                                entries += entry
+                                onProgress?.invoke(entry)
+
+                                if (result.status != StepStatus.SUCCESS) break
+                                if (result.message.contains("ACTION: DONE", ignoreCase = true)) break
+                                if (result.message.contains("ACTION: WAIT", ignoreCase = true)) {
+                                    delay(2000) // Non-blocking wait for animations
+                                }
+
+                                // Capture new state for next iteration
+                                currentStepObservation = observationService.capture()
+                            } catch (e: Exception) {
+                                entries += TraceEntry(
+                                    stepId = step.id,
+                                    description = step.description,
+                                    status = StepStatus.SKIPPED,
+                                    executorName = executor.javaClass.simpleName,
+                                    detail = e.localizedMessage ?: "Iterative step failed"
+                                )
+                                break
+                            }
+                        }
+                        // Update global observation for subsequent steps
+                        observation = observationService.capture()
+                    } else {
+                        try {
+                            val result = executor.execute(step, observation)
+                            result.externalAction?.let(externalActions::add)
+                            val entry = TraceEntry(
+                                stepId = step.id,
+                                description = step.description,
+                                status = result.status,
+                                executorName = result.executorName,
+                                thought = result.thought,
+                                detail = result.message
+                            )
+                            entries += entry
+                            onProgress?.invoke(entry)
+                            
+                            // Update observation if the step succeeded
+                            if (result.status == StepStatus.SUCCESS) {
+                                observation = observationService.capture()
+                            }
+                        } catch (exception: Exception) {
+                            entries += TraceEntry(
+                                stepId = step.id,
+                                description = step.description,
+                                status = StepStatus.SKIPPED,
+                                executorName = executor.javaClass.simpleName,
+                                detail = exception.localizedMessage ?: "Executor failed while preparing this step."
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -52,7 +150,7 @@ class ExecutionCoordinator(
             goal = goal,
             strategy = plan.strategy,
             entries = entries,
-            finalMessage = "Execution plan prepared successfully.",
+            finalMessage = "Execution completed. Iterative steps performed where necessary.",
             externalActions = externalActions
         )
     }

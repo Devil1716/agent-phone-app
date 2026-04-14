@@ -1,89 +1,342 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_gradient"
+    android:fitsSystemWindows="true">
 
+    <!-- Ambient glow orb top-left -->
+    <View
+        android:layout_width="260dp"
+        android:layout_height="260dp"
+        android:alpha="0.06"
+        android:background="@drawable/cot_step_indicator"
+        android:layout_marginTop="-100dp"
+        android:layout_marginStart="-80dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <!-- Ambient glow orb bottom-right -->
+    <View
+        android:layout_width="200dp"
+        android:layout_height="200dp"
+        android:alpha="0.04"
+        android:background="@drawable/cot_step_indicator"
+        android:layout_marginBottom="-60dp"
+        android:layout_marginEnd="-60dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- ═══════════ SECTION 1: TOP HEADER BAR ═══════════ -->
     <LinearLayout
+        android:id="@+id/headerBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="24dp">
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="20dp"
+        android:paddingTop="16dp"
+        android:paddingBottom="12dp"
+        app:layout_constraintTop_toTopOf="parent">
 
-        <TextView
-            android:id="@+id/titleText"
-            android:layout_width="match_parent"
+        <!-- App branding -->
+        <LinearLayout
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="@string/app_name"
-            android:textSize="26sp"
-            android:textStyle="bold" />
+            android:layout_weight="1"
+            android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/summaryText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="@string/main_summary"
-            android:textSize="16sp" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Manus Mobile"
+                android:textColor="@color/onBackground"
+                android:textSize="22sp"
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="-0.02" />
 
+            <TextView
+                android:id="@+id/modelStatusText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Gemma 3 · Ready"
+                android:textColor="@color/primary"
+                android:textSize="12sp"
+                android:layout_marginTop="2dp" />
+        </LinearLayout>
+
+        <!-- Status pill -->
         <TextView
             android:id="@+id/statusText"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:textSize="16sp" />
+            android:background="@drawable/badge_bg"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="4dp"
+            android:text="Active"
+            android:textColor="@color/primary"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:layout_marginEnd="8dp" />
 
-        <EditText
-            android:id="@+id/commandInput"
+        <!-- History button -->
+        <ImageButton
+            android:id="@+id/historyButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/ripple_glass"
+            android:src="@android:drawable/ic_menu_recent_history"
+            android:scaleType="centerInside"
+            android:padding="8dp"
+            app:tint="@color/secondary"
+            tools:ignore="ContentDescription"
+            android:layout_marginEnd="6dp" />
+
+        <!-- Settings button -->
+        <ImageButton
+            android:id="@+id/openSettingsButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/ripple_glass"
+            android:src="@android:drawable/ic_menu_preferences"
+            android:scaleType="centerInside"
+            android:padding="8dp"
+            app:tint="@color/secondary"
+            tools:ignore="ContentDescription" />
+    </LinearLayout>
+
+    <!-- Thin divider line -->
+    <View
+        android:id="@+id/headerDivider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/cotStepDivider"
+        android:layout_marginHorizontal="20dp"
+        app:layout_constraintTop_toBottomOf="@id/headerBar" />
+
+    <!-- ═══════════ SECTION 2: AGENT CONTROL PANEL (CoT Mini-Window) ═══════════ -->
+    <LinearLayout
+        android:id="@+id/cotPanel"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:orientation="vertical"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/glass_card_bg"
+        android:padding="16dp"
+        app:layout_constraintTop_toBottomOf="@id/headerDivider"
+        app:layout_constraintBottom_toTopOf="@id/inputBar">
+
+        <!-- Panel header -->
+        <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:hint="@string/command_hint"
-            android:inputType="textMultiLine"
-            android:minLines="3" />
+            android:layout_marginBottom="12dp">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true">
+
+                <View
+                    android:id="@+id/statusDot"
+                    android:layout_width="8dp"
+                    android:layout_height="8dp"
+                    android:background="@drawable/cot_step_indicator" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="Agent Control"
+                    android:textColor="@color/onBackground"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/cotStepCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:text="0 steps"
+                android:textColor="@color/secondary"
+                android:textSize="11sp" />
+        </RelativeLayout>
+
+        <!-- CoT Steps RecyclerView (the mini-window like Manus) -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/cotRecycler"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:overScrollMode="never"
+                android:paddingBottom="8dp"
+                android:scrollbars="none" />
+
+            <!-- Empty state -->
+            <LinearLayout
+                android:id="@+id/cotEmptyState"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:orientation="vertical"
+                android:gravity="center">
+
+                <ImageView
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:src="@android:drawable/ic_menu_agenda"
+                    app:tint="#33FFFFFF"
+                    android:layout_marginBottom="12dp"
+                    tools:ignore="ContentDescription" />
+
+                <TextView
+                    android:id="@+id/traceText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Enter a command to begin"
+                    android:textColor="@color/onBackground"
+                    android:alpha="0.35"
+                    android:textSize="14sp"
+                    android:gravity="center" />
+            </LinearLayout>
+        </FrameLayout>
+    </LinearLayout>
+
+    <!-- ═══════════ LIVE THINKING OVERLAY (floats above the CoT panel) ═══════════ -->
+    <LinearLayout
+        android:id="@+id/thinkingOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/glass_card_elevated_bg"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="8dp"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:visibility="gone"
+        android:elevation="12dp"
+        app:layout_constraintBottom_toTopOf="@id/inputBar">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="8dp">
 
-            <Button
-                android:id="@+id/runCommandButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/run_command" />
+            <com.google.android.material.progressindicator.CircularProgressIndicator
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:indeterminate="true"
+                app:indicatorSize="18dp"
+                app:indicatorColor="@color/primary"
+                app:trackThickness="2dp" />
 
-            <Button
-                android:id="@+id/stopCommandButton"
-                android:layout_width="0dp"
+            <TextView
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:layout_weight="1"
-                android:text="@string/stop_command" />
+                android:layout_marginStart="10dp"
+                android:text="Thinking..."
+                android:textColor="@color/primary"
+                android:textStyle="bold"
+                android:textSize="13sp" />
         </LinearLayout>
 
-        <Button
-            android:id="@+id/openSettingsButton"
+        <TextView
+            android:id="@+id/liveThoughtText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="@string/open_settings" />
+            android:textColor="@color/cotThoughtText"
+            android:textSize="12sp"
+            android:maxLines="2"
+            android:ellipsize="end" />
 
         <TextView
-            android:id="@+id/traceTitleText"
+            android:id="@+id/liveActionText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="@string/execution_trace"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/traceText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:textIsSelectable="true" />
+            android:layout_marginTop="4dp"
+            android:textColor="@color/cotActionText"
+            android:textSize="11sp"
+            android:textStyle="italic" />
     </LinearLayout>
-</ScrollView>
+
+    <!-- ═══════════ SECTION 3: BOTTOM INPUT BAR ═══════════ -->
+    <LinearLayout
+        android:id="@+id/inputBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="12dp"
+        android:background="@color/background"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <!-- Voice input -->
+        <ImageButton
+            android:id="@+id/voiceInputButton"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/ripple_glass"
+            android:src="@android:drawable/ic_btn_speak_now"
+            android:scaleType="centerInside"
+            android:padding="10dp"
+            app:tint="@color/secondary"
+            tools:ignore="ContentDescription"
+            android:layout_marginEnd="8dp" />
+
+        <!-- Command text input -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            app:hintTextColor="@color/secondary"
+            app:boxStrokeWidth="0dp"
+            app:boxStrokeWidthFocused="0dp"
+            app:hintEnabled="false"
+            android:layout_marginEnd="8dp">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/commandInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/glass_card_bg"
+                android:textColor="@color/onBackground"
+                android:textColorHint="@color/secondary"
+                android:hint="Tell the agent what to do..."
+                android:inputType="textMultiLine"
+                android:maxLines="3"
+                android:minLines="1"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="12dp"
+                android:textSize="14sp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Send / Initiate button -->
+        <ImageButton
+            android:id="@+id/runCommandButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/gradient_send_bg"
+            android:src="@android:drawable/ic_media_play"
+            android:scaleType="centerInside"
+            android:padding="12dp"
+            app:tint="@color/onPrimary"
+            tools:ignore="ContentDescription" />
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

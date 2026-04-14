@@ -6,7 +6,7 @@ class AiProviderRegistry {
             AiProviderDescriptor(
                 id = "gemma-local",
                 displayName = "Gemma Local",
-                models = listOf("gemma-2b-instruct", "gemma-7b-instruct"),
+                models = listOf("gemma-3-1b-it-int4", "gemma-2b-instruct", "gemma-7b-instruct"),
                 supportsOffline = true
             )
         ),
@@ -34,13 +34,14 @@ class AiProviderRegistry {
                 supportsOffline = true
             )
         ),
-        StaticAiProvider(
+        HttpAiProvider(
             AiProviderDescriptor(
                 id = "relay-gemma",
                 displayName = "Relay Gemma",
-                models = listOf("gemma-9b-instruct"),
+                models = listOf("gemma-4-9b-instruct", "gemma-9b-instruct"),
                 supportsOffline = false
-            )
+            ),
+            baseUrl = "http://192.168.1.2:8080"
         ),
         StaticAiProvider(
             AiProviderDescriptor(

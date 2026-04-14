@@ -2,8 +2,6 @@ name: Android CI
 
 on:
   push:
-    branches:
-      - main
   pull_request:
 
 env:
@@ -31,9 +29,20 @@ jobs:
         working-directory: android
         run: ./gradlew lintDebug testDebugUnitTest assembleDebug
 
+      - name: Build alpha APK (verify alpha config)
+        working-directory: android
+        run: ./gradlew assembleAlpha
+
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: debug-apk
           path: android/app/build/outputs/apk/debug/*.apk
+          retention-days: 14
+
+      - name: Upload alpha APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: alpha-apk
+          path: android/app/build/outputs/apk/alpha/*.apk
           retention-days: 14

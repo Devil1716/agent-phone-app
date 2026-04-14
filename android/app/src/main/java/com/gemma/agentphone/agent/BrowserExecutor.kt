@@ -10,12 +10,12 @@ class BrowserExecutor : ActionExecutor {
             StepType.OPEN_BROWSER_SEARCH -> {
                 val query = (step.payload ?: "").trim().replace(" ", "+")
                 StepResult(
-                    step.id,
-                    StepStatus.SUCCESS,
-                    "Prepared browser search request",
-                    "BrowserExecutor",
-                    ExternalActionRequest(
-                        IntentSpec(
+                    stepId = step.id,
+                    status = StepStatus.SUCCESS,
+                    message = "Prepared browser search request",
+                    executorName = "BrowserExecutor",
+                    externalAction = ExternalActionRequest(
+                        spec = IntentSpec(
                             action = "android.intent.action.VIEW",
                             data = "https://www.google.com/search?q=$query"
                         )
@@ -26,12 +26,12 @@ class BrowserExecutor : ActionExecutor {
             StepType.OPEN_MEDIA_SEARCH -> {
                 val query = (step.payload ?: "").trim().replace(" ", "+")
                 StepResult(
-                    step.id,
-                    StepStatus.SUCCESS,
-                    "Prepared media search request",
-                    "BrowserExecutor",
-                    ExternalActionRequest(
-                        IntentSpec(
+                    stepId = step.id,
+                    status = StepStatus.SUCCESS,
+                    message = "Prepared media search request",
+                    executorName = "BrowserExecutor",
+                    externalAction = ExternalActionRequest(
+                        spec = IntentSpec(
                             action = "android.intent.action.VIEW",
                             data = "https://m.youtube.com/results?search_query=$query"
                         )
@@ -39,7 +39,12 @@ class BrowserExecutor : ActionExecutor {
                 )
             }
 
-            else -> StepResult(step.id, StepStatus.SKIPPED, "Browser executor skipped", "BrowserExecutor")
+            else -> StepResult(
+                stepId = step.id,
+                status = StepStatus.SKIPPED,
+                message = "Browser executor skipped",
+                executorName = "BrowserExecutor"
+            )
         }
     }
 }

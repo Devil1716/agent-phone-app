@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary">#FF2DD4BF</color> <!-- Mint/Teal -->
+    <color name="primaryDark">#FF0D9488</color>
+    <color name="primaryVariant">#FF115E59</color>
+    <color name="onPrimary">#FF021816</color>
+
+    <color name="secondary">#FF94A3B8</color> <!-- Slate -->
+    <color name="secondaryVariant">#FF475569</color>
+    <color name="onSecondary">#FFFFFFFF</color>
+
+    <!-- Deep immersive dark background -->
+    <color name="background">#FF0B1120</color>
+    <color name="surface">#FF151F32</color>
+    <color name="onBackground">#FFF0F4F8</color>
+    <color name="onSurface">#FFF0F4F8</color>
+
+    <color name="error">#FFF43F5E</color>
+    <color name="onError">#FFFFFFFF</color>
+
+    <!-- Glassmorphism palette -->
+    <color name="glassBackground">#1AFFFFFF</color>
+    <color name="glassBackgroundElevated">#2EFFFFFF</color>
+    <color name="glassStroke">#33FFFFFF</color>
+    <color name="glassStrokeStrong">#55FFFFFF</color>
+    <color name="glassText">#E6FFFFFF</color>
+
+    <!-- Accent gradients -->
+    <color name="accentGlow">#332DD4BF</color>
+    <color name="accentGlowStrong">#552DD4BF</color>
+
+    <!-- Status indicators -->
+    <color name="traceSuccess">#FF10B981</color>
+    <color name="traceBlocked">#FFF43F5E</color>
+    <color name="tracePending">#FFF59E0B</color>
+    <color name="traceSkipped">#FF64748B</color>
+
+    <!-- Card & badge tones -->
+    <color name="cardStroke">#1A94A3B8</color>
+    <color name="statusCardBackground">#1A2DD4BF</color>
+    <color name="traceCardBackground">#0D1E293B</color>
+    <color name="modelCardBackground">#0F2DD4BF</color>
+    <color name="badgeBackground">#1A2DD4BF</color>
+
+    <!-- CoT mini-window -->
+    <color name="cotPanelBackground">#1A0F172A</color>
+    <color name="cotStepDivider">#0DFFFFFF</color>
+    <color name="cotThoughtText">#CCF0F4F8</color>
+    <color name="cotActionText">#FF2DD4BF</color>
+
+    <!-- Input area -->
+    <color name="inputBackground">#12FFFFFF</color>
+    <color name="inputStroke">#26FFFFFF</color>
+</resources>

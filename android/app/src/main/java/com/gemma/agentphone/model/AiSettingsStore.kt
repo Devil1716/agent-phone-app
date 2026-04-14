@@ -10,9 +10,12 @@ class AiSettingsStore(
             activeModel = keyValueStore.getString("activeModel", defaults.activeModel),
             fallbackProvider = keyValueStore.getString("fallbackProvider", defaults.fallbackProvider),
             fallbackModel = keyValueStore.getString("fallbackModel", defaults.fallbackModel),
+            customPrompt = keyValueStore.getString("customPrompt", defaults.customPrompt),
             autonomyMode = keyValueStore.getString("autonomyMode", defaults.autonomyMode),
             allowCloudFallback = keyValueStore.getBoolean("allowCloudFallback", defaults.allowCloudFallback),
-            relayEndpoint = keyValueStore.getString("relayEndpoint", defaults.relayEndpoint)
+            relayEndpoint = keyValueStore.getString("relayEndpoint", defaults.relayEndpoint),
+            modelDownloadUrl = keyValueStore.getString("modelDownloadUrl", defaults.modelDownloadUrl),
+            huggingFaceToken = keyValueStore.getString("huggingFaceToken", defaults.huggingFaceToken)
         )
     }
 
@@ -21,8 +24,11 @@ class AiSettingsStore(
         keyValueStore.putString("activeModel", settings.activeModel)
         keyValueStore.putString("fallbackProvider", settings.fallbackProvider)
         keyValueStore.putString("fallbackModel", settings.fallbackModel)
+        keyValueStore.putString("customPrompt", settings.customPrompt)
         keyValueStore.putString("autonomyMode", settings.autonomyMode)
         keyValueStore.putBoolean("allowCloudFallback", settings.allowCloudFallback)
         keyValueStore.putString("relayEndpoint", settings.relayEndpoint)
+        keyValueStore.putString("modelDownloadUrl", settings.modelDownloadUrl)
+        keyValueStore.putString("huggingFaceToken", settings.huggingFaceToken)
     }
 }

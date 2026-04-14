@@ -6,15 +6,27 @@ plugins {
 android {
     namespace = "com.gemma.agentphone"
     compileSdk = 34
+    val hasReleaseSigning = !System.getenv("ANDROID_KEYSTORE_PATH").isNullOrBlank() &&
+        !System.getenv("ANDROID_KEYSTORE_PASSWORD").isNullOrBlank() &&
+        !System.getenv("ANDROID_KEY_ALIAS").isNullOrBlank() &&
+        !System.getenv("ANDROID_KEY_PASSWORD").isNullOrBlank()
 
     signingConfigs {
         create("release") {
-            val keystorePath = System.getenv("ANDROID_KEYSTORE_PATH")
-            if (!keystorePath.isNullOrBlank()) {
-                storeFile = file(keystorePath)
+            if (hasReleaseSigning) {
+                storeFile = file(System.getenv("ANDROID_KEYSTORE_PATH"))
                 storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
                 keyAlias = System.getenv("ANDROID_KEY_ALIAS")
                 keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+            } else {
+                // Restore fallback for CI builds without secrets
+                val localJks = file("release.jks")
+                if (localJks.exists()) {
+                    storeFile = localJks
+                    storePassword = "gemma123"
+                    keyAlias = "gemma"
+                    keyPassword = "gemma123"
+                }
             }
         }
     }
@@ -23,9 +35,27 @@ android {
         applicationId = "com.gemma.agentphone"
         minSdk = 28
         targetSdk = 34
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = (project.findProperty("versionCode") as String?)?.toInt() ?: 15
+        versionName = (project.findProperty("versionName") as String?) ?: "0.5.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "APP_REPO_OWNER", "\"Devil1716\"")
+        buildConfigField("String", "APP_REPO_NAME", "\"agent-phone-app\"")
+        buildConfigField(
+            "String",
+            "DEFAULT_MODEL_DOWNLOAD_URL",
+            "\"https://huggingface.co/AfiOne/gemma3-1b-it-int4.task/resolve/main/gemma3-1b-it-int4.task?download=true\""
+        )
+        buildConfigField("String", "DEFAULT_MODEL_FILENAME", "\"gemma3-1b-it-int4.task\"")
+        buildConfigField(
+            "String",
+            "DEFAULT_MODEL_SOURCE_PAGE_URL",
+            "\"https://huggingface.co/AfiOne/gemma3-1b-it-int4.task\""
+        )
+
+        ndk {
+            // Ensure compatibility with all common Android devices and emulators
+            abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))
+        }
     }
 
     buildTypes {
@@ -38,7 +68,11 @@ android {
             initWith(getByName("release"))
             applicationIdSuffix = ".alpha"
             versionNameSuffix = "-alpha"
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = if (hasReleaseSigning) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
             isDebuggable = false
         }
 
@@ -48,7 +82,11 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = if (hasReleaseSigning) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 
@@ -59,6 +97,10 @@ android {
 
     kotlinOptions {
         jvmTarget = "17"
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     testOptions {
@@ -72,6 +114,12 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.activity:activity-ktx:1.9.0")
+    implementation("androidx.fragment:fragment-ktx:1.7.1")
+    implementation("androidx.recyclerview:recyclerview:1.3.2")
+    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.google.mediapipe:tasks-genai:0.10.27")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.1")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("com.google.truth:truth:1.4.4")
@@ -80,4 +128,5 @@ dependencies {
     androidTestImplementation("androidx.test:rules:1.6.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
     androidTestImplementation("androidx.test.espresso:espresso-intents:3.6.1")
+    androidTestImplementation("com.google.truth:truth:1.4.4")
 }
