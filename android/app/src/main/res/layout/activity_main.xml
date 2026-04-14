@@ -126,7 +126,7 @@
                         android:background="@drawable/glass_card_bg"
                         style="@style/Widget.MaterialComponents.Button.TextButton"
                         app:icon="@android:drawable/ic_menu_preferences"
-                        app:iconTint="@string/onboarding_model_source_button"
+                        app:iconTint="@color/secondary"
                         app:iconPadding="0dp"
                         android:padding="0dp"
                         tools:ignore="ContentDescription" />

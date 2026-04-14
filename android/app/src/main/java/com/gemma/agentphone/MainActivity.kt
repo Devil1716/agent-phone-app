@@ -2,7 +2,7 @@ package com.gemma.agentphone
 
 import android.app.Activity
 import android.content.Intent
-import android.net.Uri
+
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -14,20 +14,20 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.gemma.agentphone.agent.AgentRuntimeFactory
-import com.gemma.agentphone.agent.AgentOrchestrator
+
 import com.gemma.agentphone.agent.ExecutionTrace
 import com.gemma.agentphone.agent.ModelDownloadManager
 import com.gemma.agentphone.agent.ModelDownloadStatus
 import com.gemma.agentphone.agent.StepStatus
 import com.gemma.agentphone.agent.TraceEntry
-import com.gemma.agentphone.agent.UpdateManager
+
 import com.gemma.agentphone.model.AiProviderRegistry
 import com.gemma.agentphone.model.AiSettingsRepository
 import com.gemma.agentphone.model.ExecutionHistoryEntry
 import com.gemma.agentphone.model.ExecutionHistoryRepository
 import com.gemma.agentphone.model.SharedPreferencesKeyValueStore
-import com.google.android.material.button.MaterialButton
-import com.google.android.material.progressindicator.LinearProgressIndicator
+
+
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -124,12 +124,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        val settings = AiSettingsRepository(this).load()
-        val orchestrator = AgentOrchestrator(
-            settings = settings,
-            providerRegistry = providerRegistry
-        )
-
         statusText.text = "Manus-style Controller Active"
         if (traceText.text.isNullOrBlank()) {
             traceText.text = "Standby..."
@@ -253,23 +247,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun checkForUpdates() {
-        val updateManager = UpdateManager()
-        updateManager.checkForUpdates { version, url ->
-            runOnUiThread {
-                val updateCard = findViewById<com.google.android.material.card.MaterialCardView>(R.id.updateCard)
-                val updateText = findViewById<TextView>(R.id.updateText)
-                val downloadButton = findViewById<MaterialButton>(R.id.downloadUpdateButton)
 
-                updateText.text = getString(R.string.update_available, version)
-                downloadButton.text = getString(R.string.update_action)
-                updateCard.visibility = android.view.View.VISIBLE
-                downloadButton.setOnClickListener {
-                    startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url)))
-                }
-            }
-        }
-    }
 
     private fun showConfirmationDialog(trace: ExecutionTrace) {
         val pendingEntry = trace.entries.firstOrNull { it.status == StepStatus.PENDING_CONFIRMATION }
