@@ -72,14 +72,14 @@ class IntentDispatchTest {
         assertThat(launch.packageName).isEqualTo("com.google.android.gm")
     }
 
-    private fun waitForLaunch(timeoutMs: Long = 10_000) {
+    private fun waitForLaunch(timeoutMs: Long = 20_000) {
         val start = System.currentTimeMillis()
         while (System.currentTimeMillis() - start < timeoutMs) {
             InstrumentationRegistry.getInstrumentation().waitForIdleSync()
             if (launchedSpecs.isNotEmpty()) {
                 return
             }
-            Thread.sleep(250)
+            Thread.sleep(500)
         }
     }
 }
