@@ -28,6 +28,6 @@ class TemplateTaskPlannerTest {
         )
 
         assertThat(plan.strategy).isEqualTo(ExecutionStrategy.SLOW_PATH)
-        assertThat(plan.steps.first().type).isEqualTo(StepType.OPEN_APP)
+        assertThat(plan.steps.first().type).isEqualTo(StepType.EXECUTE_AUTONOMOUSLY)
     }
 }

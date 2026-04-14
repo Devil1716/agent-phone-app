@@ -32,7 +32,10 @@ class AgentRuntimeFactory {
         }
 
         return ExecutionCoordinator(
-            goalInterpreter = PromptAwareGoalInterpreter(settings),
+            goalInterpreter = PromptAwareGoalInterpreter(
+                settings = settings,
+                fallback = LlmGoalInterpreter(aiProvider = primaryProvider)
+            ),
             taskPlanner = TemplateTaskPlanner(),
             policyEngine = DefaultPolicyEngine(),
             observationService = DefaultObservationService(),

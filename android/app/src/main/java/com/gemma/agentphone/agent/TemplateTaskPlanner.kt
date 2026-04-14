@@ -49,22 +49,12 @@ class TemplateTaskPlanner : TaskPlanner {
             )
 
             GoalCategory.GENERAL_APP_CONTROL -> listOf(
-                if (!goal.targetApp.isNullOrBlank()) {
-                    TaskStep(
-                        id = "open_app",
-                        type = StepType.OPEN_APP,
-                        description = "Open ${goal.targetApp}",
-                        targetApp = goal.targetApp,
-                        payload = goal.text
-                    )
-                } else {
-                    TaskStep(
-                        "autonomous_control",
-                        StepType.EXECUTE_AUTONOMOUSLY,
-                        "Ask local Gemma for the next suggested app-control step",
-                        payload = goal.text
-                    )
-                }
+                TaskStep(
+                    "autonomous_control",
+                    StepType.EXECUTE_AUTONOMOUSLY,
+                    "Take autonomous control to achieve: ${goal.text}",
+                    payload = goal.text
+                )
             )
 
             GoalCategory.UNSUPPORTED -> listOf(
