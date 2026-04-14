@@ -35,21 +35,21 @@ android {
         applicationId = "com.gemma.agentphone"
         minSdk = 28
         targetSdk = 34
-        versionCode = (project.findProperty("versionCode") as String?)?.toInt() ?: 20
-        versionName = (project.findProperty("versionName") as String?) ?: "0.5.5"
+        versionCode = (project.findProperty("versionCode") as String?)?.toInt() ?: 21
+        versionName = (project.findProperty("versionName") as String?) ?: "0.5.6"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "APP_REPO_OWNER", "\"Devil1716\"")
         buildConfigField("String", "APP_REPO_NAME", "\"agent-phone-app\"")
         buildConfigField(
             "String",
             "DEFAULT_MODEL_DOWNLOAD_URL",
-            "\"https://huggingface.co/AfiOne/gemma3-1b-it-int4.task/resolve/main/gemma3-1b-it-int4.task?download=true\""
+            "\"https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it-web.task?download=true\""
         )
-        buildConfigField("String", "DEFAULT_MODEL_FILENAME", "\"gemma3-1b-it-int4.task\"")
+        buildConfigField("String", "DEFAULT_MODEL_FILENAME", "\"gemma-4-E2B-it-web.task\"")
         buildConfigField(
             "String",
             "DEFAULT_MODEL_SOURCE_PAGE_URL",
-            "\"https://huggingface.co/AfiOne/gemma3-1b-it-int4.task\""
+            "\"https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm\""
         )
 
         ndk {
