@@ -32,7 +32,7 @@ class MainActivityTest {
             activityRule.scenario.onActivity { activity ->
                 trace = activity.findViewById<TextView>(R.id.traceText).text.toString()
             }
-            if (trace.contains("Goal: open Spotify") && trace.contains("Execution plan prepared successfully.")) {
+            if (trace.contains("Goal: open Spotify") && trace.contains("Execution completed")) {
                 break
             }
             Thread.sleep(500)
@@ -41,7 +41,7 @@ class MainActivityTest {
         assertThat(trace).contains("Goal: open Spotify")
         // In CI/emulators, the local runtime may not be ready due to hardware limits.
         // We accept either the success message or the guarded runtime error.
-        val isSuccessful = trace.contains("Execution plan prepared successfully.")
+        val isSuccessful = trace.contains("Execution completed")
         val isAiError = trace.contains("Error running the agent") || trace.contains("local Gemma runtime is not ready")
 
         assertThat(isSuccessful || isAiError).isTrue()
