@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:paddingVertical="10dp"
+    android:gravity="top">
+
+    <!-- Step number circle -->
+    <TextView
+        android:id="@+id/cotStepNumber"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:background="@drawable/step_number_bg"
+        android:gravity="center"
+        android:text="1"
+        android:textColor="@color/primary"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        android:layout_marginEnd="12dp"
+        android:layout_marginTop="2dp" />
+
+    <!-- Step content -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <!-- Executor / action label -->
+        <TextView
+            android:id="@+id/cotExecutorName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/cotActionText"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:text="Executor"
+            android:layout_marginBottom="2dp" />
+
+        <!-- Description -->
+        <TextView
+            android:id="@+id/cotDescription"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/onBackground"
+            android:textSize="13sp"
+            android:text="Step description"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:layout_marginBottom="2dp" />
+
+        <!-- Thought (Chain of Thought reasoning) -->
+        <TextView
+            android:id="@+id/cotThought"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/cotThoughtText"
+            android:textSize="11sp"
+            android:fontFamily="monospace"
+            android:maxLines="3"
+            android:ellipsize="end"
+            android:visibility="gone"
+            tools:visibility="visible"
+            tools:text="Analyzing the request to open Spotify..." />
+
+        <!-- Detail -->
+        <TextView
+            android:id="@+id/cotDetail"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/secondary"
+            android:textSize="11sp"
+            android:alpha="0.7"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:layout_marginTop="2dp" />
+    </LinearLayout>
+
+    <!-- Status indicator -->
+    <TextView
+        android:id="@+id/cotStatusBadge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/badge_bg"
+        android:paddingHorizontal="8dp"
+        android:paddingVertical="3dp"
+        android:text="OK"
+        android:textColor="@color/traceSuccess"
+        android:textSize="9sp"
+        android:textStyle="bold"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="2dp" />
+
+</LinearLayout>

@@ -18,7 +18,7 @@ class HistoryActivity : AppCompatActivity() {
 
     private lateinit var repository: ExecutionHistoryRepository
     private lateinit var recyclerView: RecyclerView
-    private lateinit var emptyText: TextView
+    private lateinit var emptyContainer: View
     private val adapter = HistoryAdapter { entry ->
         val intent = android.content.Intent(this, MainActivity::class.java).apply {
             putExtra("prefill_command", entry.commandText)
@@ -38,7 +38,7 @@ class HistoryActivity : AppCompatActivity() {
         )
 
         recyclerView = findViewById(R.id.historyRecycler)
-        emptyText = findViewById(R.id.emptyHistoryText)
+        emptyContainer = findViewById(R.id.emptyHistoryContainer)
 
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
@@ -48,13 +48,17 @@ class HistoryActivity : AppCompatActivity() {
             refreshList()
         }
 
+        findViewById<View>(R.id.backButton).setOnClickListener {
+            finish()
+        }
+
         refreshList()
     }
 
     private fun refreshList() {
         val entries = repository.loadAll()
         adapter.submitList(entries)
-        emptyText.visibility = if (entries.isEmpty()) View.VISIBLE else View.GONE
+        emptyContainer.visibility = if (entries.isEmpty()) View.VISIBLE else View.GONE
         recyclerView.visibility = if (entries.isEmpty()) View.GONE else View.VISIBLE
     }
 }

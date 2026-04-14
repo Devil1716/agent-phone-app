@@ -3,7 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background">
+    android:background="@drawable/bg_gradient"
+    android:fitsSystemWindows="true">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -12,11 +13,11 @@
         android:padding="28dp"
         android:gravity="center_horizontal">
 
-        <!-- App Icon placeholder -->
+        <!-- App Icon -->
         <ImageView
-            android:layout_width="80dp"
-            android:layout_height="80dp"
-            android:layout_marginTop="32dp"
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            android:layout_marginTop="24dp"
             android:layout_marginBottom="16dp"
             android:src="@android:drawable/ic_dialog_info"
             app:tint="@color/primary"
@@ -26,229 +27,219 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/onboarding_title"
-            android:textAppearance="@style/TextAppearance.GemmaAgent.Headline"
+            android:textColor="@color/onBackground"
+            android:textSize="24sp"
+            android:textStyle="bold"
             android:gravity="center"
-            android:layout_marginBottom="8dp" />
+            android:letterSpacing="-0.02"
+            android:layout_marginBottom="6dp" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/onboarding_subtitle"
-            android:textAppearance="@style/TextAppearance.GemmaAgent.Subtitle"
+            android:textColor="@color/onBackground"
+            android:alpha="0.55"
+            android:textSize="14sp"
             android:gravity="center"
-            android:alpha="0.7"
             android:layout_marginBottom="32dp" />
 
-        <!-- Accessibility Permission Card -->
-        <com.google.android.material.card.MaterialCardView
+        <!-- Accessibility Permission Card (Glass) -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="2dp"
-            app:strokeColor="@color/cardStroke"
-            app:strokeWidth="1dp">
+            android:background="@drawable/glass_card_bg"
+            android:orientation="vertical"
+            android:padding="20dp">
 
-            <LinearLayout
+            <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="20dp">
+                android:text="@string/onboarding_accessibility_title"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:textColor="@color/primary"
+                android:layout_marginBottom="6dp" />
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/onboarding_accessibility_title"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/primary"
-                    android:layout_marginBottom="6dp" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/onboarding_accessibility_desc"
+                android:textSize="13sp"
+                android:textColor="@color/onBackground"
+                android:alpha="0.7"
+                android:layout_marginBottom="12dp" />
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/onboarding_accessibility_desc"
-                    android:textSize="14sp"
-                    android:alpha="0.8"
-                    android:layout_marginBottom="12dp" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/enableAccessibilityButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/onboarding_accessibility_button"
+                style="@style/Widget.GemmaAgent.Button.Outlined"
+                app:cornerRadius="14dp" />
+        </LinearLayout>
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/enableAccessibilityButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/onboarding_accessibility_button"
-                    style="@style/Widget.GemmaAgent.Button.Outlined"
-                    app:cornerRadius="12dp" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Notification Access Card -->
-        <com.google.android.material.card.MaterialCardView
+        <!-- Notification Access Card (Glass) -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="32dp"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="2dp"
-            app:strokeColor="@color/cardStroke"
-            app:strokeWidth="1dp">
+            android:layout_marginBottom="24dp"
+            android:background="@drawable/glass_card_bg"
+            android:orientation="vertical"
+            android:padding="20dp">
 
-            <LinearLayout
+            <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="20dp">
+                android:text="@string/onboarding_notification_title"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:textColor="@color/primary"
+                android:layout_marginBottom="6dp" />
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/onboarding_notification_title"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/primary"
-                    android:layout_marginBottom="6dp" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/onboarding_notification_desc"
+                android:textSize="13sp"
+                android:textColor="@color/onBackground"
+                android:alpha="0.7"
+                android:layout_marginBottom="12dp" />
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/onboarding_notification_desc"
-                    android:textSize="14sp"
-                    android:alpha="0.8"
-                    android:layout_marginBottom="12dp" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/enableNotificationButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/onboarding_notification_button"
+                style="@style/Widget.GemmaAgent.Button.Outlined"
+                app:cornerRadius="14dp" />
+        </LinearLayout>
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/enableNotificationButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/onboarding_notification_button"
-                    style="@style/Widget.GemmaAgent.Button.Outlined"
-                    app:cornerRadius="12dp" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Gemma Model Download Card -->
-        <com.google.android.material.card.MaterialCardView
+        <!-- Model Download Card (Glass) -->
+        <LinearLayout
             android:id="@+id/modelCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="32dp"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="2dp"
-            app:strokeColor="@color/cardStroke"
-            app:strokeWidth="1dp">
-            
+            android:background="@drawable/glass_card_bg"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/onboarding_model_title"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:textColor="@color/primary"
+                android:layout_marginBottom="6dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/onboarding_model_desc"
+                android:textSize="13sp"
+                android:textColor="@color/onBackground"
+                android:alpha="0.7"
+                android:layout_marginBottom="12dp" />
+
+            <TextView
+                android:id="@+id/modelAccessHint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:text="@string/onboarding_model_access_hint"
+                android:textSize="11sp"
+                android:textColor="@color/onBackground"
+                android:alpha="0.5" />
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/downloadModelButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/onboarding_model_download_button"
+                    style="@style/Widget.GemmaAgent.Button.Outlined"
+                    app:cornerRadius="14dp" />
+
+                <LinearLayout
+                    android:id="@+id/downloadProgressContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <com.google.android.material.progressindicator.LinearProgressIndicator
+                        android:id="@+id/modelDownloadProgress"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="4dp"
+                        app:indicatorColor="@color/primary"
+                        app:trackColor="@color/glassStroke"
+                        app:trackThickness="6dp"
+                        app:trackCornerRadius="3dp" />
+
+                    <TextView
+                        android:id="@+id/modelDownloadStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/onboarding_model_downloading"
+                        android:textSize="11sp"
+                        android:textColor="@color/onBackground"
+                        android:gravity="center"
+                        android:alpha="0.5" />
+                </LinearLayout>
+            </FrameLayout>
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="20dp">
-                
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/onboarding_model_title"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/primary"
-                    android:layout_marginBottom="6dp" />
-                
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/onboarding_model_desc"
-                    android:textSize="14sp"
-                    android:alpha="0.8"
-                    android:layout_marginBottom="12dp" />
-
-                <TextView
-                    android:id="@+id/modelAccessHint"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    android:text="@string/onboarding_model_access_hint"
-                    android:textSize="12sp"
-                    android:alpha="0.75" />
-
-                <FrameLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
-                
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/downloadModelButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="@string/onboarding_model_download_button"
-                        style="@style/Widget.GemmaAgent.Button.Outlined"
-                        app:cornerRadius="12dp" />
-
-                    <LinearLayout
-                        android:id="@+id/downloadProgressContainer"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:visibility="gone">
-
-                        <com.google.android.material.progressindicator.LinearProgressIndicator
-                            android:id="@+id/modelDownloadProgress"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginBottom="4dp"
-                            app:indicatorColor="@color/primary"
-                            app:trackColor="@color/cardStroke"
-                            app:trackThickness="8dp"
-                            app:trackCornerRadius="4dp" />
-
-                        <TextView
-                            android:id="@+id/modelDownloadStatus"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="@string/onboarding_model_downloading"
-                            android:textSize="12sp"
-                            android:gravity="center"
-                            android:alpha="0.6" />
-                    </LinearLayout>
-                </FrameLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:orientation="horizontal">
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/importModelButton"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/onboarding_model_import_button"
-                        style="@style/Widget.GemmaAgent.Button.Outlined" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/openModelSettingsButton"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="8dp"
-                        android:text="@string/onboarding_model_open_settings_button"
-                        style="@style/Widget.GemmaAgent.Button.Outlined" />
-                </LinearLayout>
+                android:layout_marginTop="10dp"
+                android:orientation="horizontal">
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/openModelSourceButton"
-                    android:layout_width="match_parent"
+                    android:id="@+id/importModelButton"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:text="@string/onboarding_model_source_button"
-                    style="@style/Widget.GemmaAgent.Button.Outlined" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+                    android:layout_weight="1"
+                    android:text="@string/onboarding_model_import_button"
+                    style="@style/Widget.GemmaAgent.Button.Outlined"
+                    android:textSize="12sp" />
 
-        <!-- Action Buttons -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/openModelSettingsButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:text="@string/onboarding_model_open_settings_button"
+                    style="@style/Widget.GemmaAgent.Button.Outlined"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/openModelSourceButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="@string/onboarding_model_source_button"
+                style="@style/Widget.GemmaAgent.Button.Outlined" />
+        </LinearLayout>
+
+        <!-- Get Started -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/getStartedButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/onboarding_get_started"
-            app:cornerRadius="12dp"
+            android:background="@drawable/gradient_accent_bg"
+            app:backgroundTint="@null"
+            android:textColor="@color/onPrimary"
+            app:cornerRadius="14dp"
             android:layout_marginBottom="8dp" />
 
         <com.google.android.material.button.MaterialButton

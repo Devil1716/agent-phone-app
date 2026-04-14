@@ -74,6 +74,10 @@ class SettingsActivity : AppCompatActivity() {
             }
         )
 
+        findViewById<android.view.View>(R.id.settingsBackButton).setOnClickListener {
+            finish()
+        }
+
         findViewById<Button>(R.id.saveSettingsButton).setOnClickListener {
             val nextSettings = AiSettings(
                 activeProvider = providerSpinner.selectedItem.toString(),
