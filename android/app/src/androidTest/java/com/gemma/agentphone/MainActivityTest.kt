@@ -25,22 +25,20 @@ class MainActivityTest {
             activity.findViewById<Button>(R.id.runCommandButton).performClick()
         }
 
-        // Wait for the background work to complete.
-        var trace = ""
+        // Wait for the button to be re-enabled, signaling completion of the background task
+        var isEnabled = false
         val startTime = System.currentTimeMillis()
-        // Increased timeout for slow CI environments
         while (System.currentTimeMillis() - startTime < 20000) {
             activityRule.scenario.onActivity { activity ->
-                trace = activity.findViewById<TextView>(R.id.traceText).text.toString()
+                isEnabled = activity.findViewById<Button>(R.id.runCommandButton).isEnabled
             }
-            // Break if we see either success OR a handled AI error
-            val isSuccessful = trace.contains("Goal: open Spotify") && trace.contains("Execution completed")
-            val isAiError = trace.contains("Error running the agent") || trace.contains("local Gemma runtime is not ready")
-            
-            if (isSuccessful || isAiError) {
-                break
-            }
-            Thread.sleep(200) // Nuclear polling frequency
+            if (isEnabled) break
+            Thread.sleep(200)
+        }
+        
+        var trace = ""
+        activityRule.scenario.onActivity { activity ->
+            trace = activity.findViewById<TextView>(R.id.traceText).text.toString()
         }
 
         // In CI/emulators, the local runtime may not be ready due to hardware limits.

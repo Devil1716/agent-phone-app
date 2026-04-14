@@ -183,8 +183,6 @@ class MainActivity : AppCompatActivity() {
                 val settings = AiSettingsRepository(this@MainActivity).load()
                 val trace = runtimeFactory.createCoordinator(this@MainActivity, settings, providerRegistry).run(command)
 
-                withContext(Dispatchers.Main) {
-                    runCommandButton.isEnabled = true
                     historyRepository.add(
                         ExecutionHistoryEntry(
                             timestampMs = System.currentTimeMillis(),
@@ -203,13 +201,14 @@ class MainActivity : AppCompatActivity() {
                     } else {
                         trace.externalActions.forEach { externalActionLauncher.launch(this@MainActivity, it.spec) }
                     }
+                    runCommandButton.isEnabled = true
                 }
             } catch (exception: Exception) {
                 withContext(Dispatchers.Main) {
-                    runCommandButton.isEnabled = true
                     traceText.text =
                         "Error running the agent: ${exception.localizedMessage ?: "Unknown error"}\n\n" +
                         "Check that the local model is ready or that your fallback provider is configured."
+                    runCommandButton.isEnabled = true
                 }
             }
         }

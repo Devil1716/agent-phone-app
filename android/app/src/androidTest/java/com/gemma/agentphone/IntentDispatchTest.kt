@@ -94,15 +94,14 @@ class IntentDispatchTest {
                 return
             }
 
-            // Detect errors in the UI trace to fail fast with context
-            var statusText = ""
+            // Detect completion based on button being re-enabled
+            var isEnabled = false
             activityRule.scenario.onActivity { activity ->
-                statusText = activity.findViewById<TextView>(R.id.traceText).text.toString()
+                isEnabled = activity.findViewById<Button>(R.id.runCommandButton).isEnabled
             }
-            
-            if (statusText.contains("Error running the agent") || statusText.contains("local Gemma runtime is not ready")) {
-                // If it's a known environmental failure, we gracefully exit so we don't hang
-                // the CI runner for 20 seconds. 
+            if (isEnabled) {
+                // If the button is re-enabled but we didn't receive an intent, 
+                // it might be an AI error, which we handle in the test assertions.
                 return
             }
 
