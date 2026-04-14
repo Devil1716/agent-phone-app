@@ -21,7 +21,7 @@ class AutonomousActionParser {
 
             mentionsWebSearch(normalizedCommand) || mentionsWebSearch(normalizedResponse) -> {
                 ExternalActionRequest(
-                    IntentSpec(
+                    spec = IntentSpec(
                         action = Intent.ACTION_VIEW,
                         data = "https://www.google.com/search?q=${encode(extractSearchQuery(command))}"
                     )
