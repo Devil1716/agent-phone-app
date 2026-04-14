@@ -183,6 +183,7 @@ class MainActivity : AppCompatActivity() {
                 val settings = AiSettingsRepository(this@MainActivity).load()
                 val trace = runtimeFactory.createCoordinator(this@MainActivity, settings, providerRegistry).run(command)
 
+                withContext(Dispatchers.Main) {
                     historyRepository.add(
                         ExecutionHistoryEntry(
                             timestampMs = System.currentTimeMillis(),
