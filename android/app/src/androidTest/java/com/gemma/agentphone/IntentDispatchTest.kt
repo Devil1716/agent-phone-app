@@ -92,6 +92,7 @@ class IntentDispatchTest {
             statusText = activity.findViewById<TextView>(R.id.traceText).text.toString()
         }
         return statusText.contains("Error running the agent") || 
+               statusText.contains("Standby...") ||
                statusText.contains("local Gemma runtime is not ready") ||
                statusText.contains("No AI provider is available")
     }

@@ -3,48 +3,57 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/background"
     android:orientation="vertical"
-    android:background="@color/background">
+    android:padding="24dp">
 
-    <!-- Header -->
-    <LinearLayout
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:padding="20dp">
+        android:layout_marginBottom="24dp">
 
         <TextView
-            android:layout_width="0dp"
+            android:id="@+id/historyTitle"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/history_title"
-            android:textAppearance="@style/TextAppearance.GemmaAgent.Headline" />
+            android:text="Task History"
+            android:textColor="@color/onBackground"
+            android:textSize="24sp"
+            android:textStyle="bold" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/clearHistoryButton"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Clear"
-            style="@style/Widget.GemmaAgent.Button.Outlined"
-            app:cornerRadius="12dp" />
-    </LinearLayout>
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:text="Clear All"
+            android:textColor="@color/error"
+            app:icon="@android:drawable/ic_menu_delete"
+            app:iconTint="@color/error" />
+    </RelativeLayout>
 
-    <TextView
-        android:id="@+id/emptyHistoryText"
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:gravity="center"
-        android:text="@string/history_empty"
-        android:textSize="16sp"
-        android:alpha="0.5"
-        android:visibility="gone" />
+        android:layout_height="0dp"
+        android:layout_weight="1">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/historyRecycler"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:clipToPadding="false" />
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/historyRecycler"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingBottom="16dp" />
+
+        <TextView
+            android:id="@+id/emptyHistoryText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="No history logs yet."
+            android:textColor="@color/onBackground"
+            android:alpha="0.5"
+            android:visibility="gone" />
+    </FrameLayout>
 </LinearLayout>

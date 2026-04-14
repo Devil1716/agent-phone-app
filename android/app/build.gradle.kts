@@ -51,6 +51,11 @@ android {
             "DEFAULT_MODEL_SOURCE_PAGE_URL",
             "\"https://huggingface.co/AfiOne/gemma3-1b-it-int4.task\""
         )
+
+        ndk {
+            // Ensure compatibility with all common Android devices and emulators
+            abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))
+        }
     }
 
     buildTypes {

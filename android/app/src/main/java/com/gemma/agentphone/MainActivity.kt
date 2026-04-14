@@ -112,23 +112,11 @@ class MainActivity : AppCompatActivity() {
         findViewById<android.view.View>(R.id.runCommandButton).setOnClickListener {
             runCommand()
         }
-        findViewById<android.view.View>(R.id.stopCommandButton).setOnClickListener {
-            traceText.text = "Execution canceled by user."
-        }
         findViewById<android.view.View>(R.id.voiceInputButton).setOnClickListener {
             launchVoiceInput()
         }
         findViewById<android.view.View>(R.id.historyButton).setOnClickListener {
             startActivity(Intent(this, HistoryActivity::class.java))
-        }
-        findViewById<android.view.View>(R.id.downloadModelButtonMain).setOnClickListener {
-            startModelDownload()
-        }
-        findViewById<android.view.View>(R.id.importModelButtonMain).setOnClickListener {
-            importModelLauncher.launch(arrayOf("*/*"))
-        }
-        findViewById<android.view.View>(R.id.openModelSourceButtonMain).setOnClickListener {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(BuildConfig.DEFAULT_MODEL_SOURCE_PAGE_URL)))
         }
 
         applyPrefillCommand(intent)
@@ -142,21 +130,11 @@ class MainActivity : AppCompatActivity() {
             providerRegistry = providerRegistry
         )
 
-        statusText.text = buildString {
-            appendLine("Professional alpha track: Android 12-14 app-control agent")
-            appendLine()
-            orchestrator.summaryLines().forEach(::appendLine)
-            appendLine()
-            appendLine("Available providers:")
-            providerRegistry.listProviders().forEach { provider ->
-                appendLine("- ${provider.displayName}: ${provider.models.joinToString()}")
-            }
-        }
+        statusText.text = "Manus-style Controller Active"
         if (traceText.text.isNullOrBlank()) {
-            traceText.text = getString(R.string.trace_idle)
+            traceText.text = "Standby..."
         }
         refreshModelStatus()
-        checkForUpdates()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -174,14 +152,25 @@ class MainActivity : AppCompatActivity() {
         val command = commandInput.text.toString()
         if (command.isBlank()) return
 
-        traceText.text = "Gemma is analyzing the request and screen context..."
         val runCommandButton = findViewById<android.view.View>(R.id.runCommandButton)
+        val thinkingOverlay = findViewById<android.view.View>(R.id.thinkingOverlay)
+        val liveThoughtText = findViewById<TextView>(R.id.liveThoughtText)
+        val liveActionText = findViewById<TextView>(R.id.liveActionText)
+
         runCommandButton.isEnabled = false
+        thinkingOverlay.visibility = android.view.View.VISIBLE
+        liveThoughtText.text = "Analyzing request..."
+        liveActionText.text = ""
 
         lifecycleScope.launch(Dispatchers.Default) {
             try {
                 val settings = AiSettingsRepository(this@MainActivity).load()
-                val trace = runtimeFactory.createCoordinator(this@MainActivity, settings, providerRegistry).run(command)
+                val trace = runtimeFactory.createCoordinator(this@MainActivity, settings, providerRegistry).run(command) { progress ->
+                    runOnUiThread {
+                        liveThoughtText.text = progress.thought ?: progress.description
+                        liveActionText.text = "ACTION: ${progress.executorName}"
+                    }
+                }
 
                 withContext(Dispatchers.Main) {
                     historyRepository.add(
@@ -196,6 +185,7 @@ class MainActivity : AppCompatActivity() {
                     )
 
                     traceText.text = renderTrace(trace)
+                    thinkingOverlay.visibility = android.view.View.GONE
 
                     if (trace.awaitingConfirmation) {
                         showConfirmationDialog(trace)
@@ -206,6 +196,7 @@ class MainActivity : AppCompatActivity() {
                 }
             } catch (exception: Exception) {
                 withContext(Dispatchers.Main) {
+                    thinkingOverlay.visibility = android.view.View.GONE
                     traceText.text =
                         "Error running the agent: ${exception.localizedMessage ?: "Unknown error"}\n\n" +
                         "Check that the local model is ready or that your fallback provider is configured."
@@ -235,49 +226,28 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refreshModelStatus(): Boolean {
-        val statusTextView = findViewById<TextView>(R.id.modelStatusText)
-        val progressIndicator = findViewById<LinearProgressIndicator>(R.id.modelDownloadProgressMain)
-        val downloadButton = findViewById<MaterialButton>(R.id.downloadModelButtonMain)
-        val importButton = findViewById<MaterialButton>(R.id.importModelButtonMain)
-        val sourceButton = findViewById<MaterialButton>(R.id.openModelSourceButtonMain)
+        val modelStatusTextView = findViewById<TextView>(R.id.modelStatusText)
 
         return when (val status = modelDownloadManager.getStatus()) {
             is ModelDownloadStatus.Ready -> {
-                statusTextView.text = getString(R.string.model_status_ready)
-                progressIndicator.visibility = android.view.View.GONE
-                downloadButton.isEnabled = false
-                importButton.isEnabled = true
-                sourceButton.isEnabled = false
+                modelStatusTextView.text = "Gemma Model Active"
                 false
             }
 
             is ModelDownloadStatus.Downloading -> {
-                statusTextView.text = getString(R.string.model_status_downloading, status.progress)
-                progressIndicator.visibility = android.view.View.VISIBLE
-                progressIndicator.progress = status.progress
-                downloadButton.isEnabled = false
-                importButton.isEnabled = false
-                sourceButton.isEnabled = false
+                modelStatusTextView.text = "Downloading Model (${status.progress}%)"
                 modelStatusHandler.removeCallbacks(modelStatusRunnable)
                 modelStatusHandler.postDelayed(modelStatusRunnable, 1_000)
                 true
             }
 
             is ModelDownloadStatus.Failed -> {
-                statusTextView.text = status.message
-                progressIndicator.visibility = android.view.View.GONE
-                downloadButton.isEnabled = true
-                importButton.isEnabled = true
-                sourceButton.isEnabled = true
+                modelStatusTextView.text = "Model Sync Error"
                 false
             }
 
             ModelDownloadStatus.Missing -> {
-                statusTextView.text = getString(R.string.model_status_missing)
-                progressIndicator.visibility = android.view.View.GONE
-                downloadButton.isEnabled = true
-                importButton.isEnabled = true
-                sourceButton.isEnabled = true
+                modelStatusTextView.text = "Model Missing"
                 false
             }
         }

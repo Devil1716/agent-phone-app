@@ -13,7 +13,10 @@ class ExecutionCoordinator(
         private const val MAX_AUTONOMOUS_STEPS = 5
     }
 
-    suspend fun run(command: String): ExecutionTrace {
+    suspend fun run(
+        command: String,
+        onProgress: ((TraceEntry) -> Unit)? = null
+    ): ExecutionTrace {
         val goal = goalInterpreter.interpret(command)
         var observation = observationService.capture()
         val plan = taskPlanner.plan(goal, observation)
@@ -24,24 +27,28 @@ class ExecutionCoordinator(
             val decision = policyEngine.classify(step)
             when (decision.action) {
                 PolicyAction.BLOCK -> {
-                    entries += TraceEntry(
+                    val entry = TraceEntry(
                         stepId = step.id,
                         description = step.description,
                         status = StepStatus.BLOCKED,
                         executorName = "PolicyEngine",
                         detail = decision.reason
                     )
+                    entries += entry
+                    onProgress?.invoke(entry)
                     return ExecutionTrace(goal, plan.strategy, entries, "Blocked: ${step.description}")
                 }
 
                 PolicyAction.REQUIRE_CONFIRMATION -> {
-                    entries += TraceEntry(
+                    val entry = TraceEntry(
                         stepId = step.id,
                         description = step.description,
                         status = StepStatus.PENDING_CONFIRMATION,
                         executorName = "PolicyEngine",
                         detail = decision.reason
                     )
+                    entries += entry
+                    onProgress?.invoke(entry)
                     return ExecutionTrace(
                         goal = goal,
                         strategy = plan.strategy,
@@ -55,13 +62,15 @@ class ExecutionCoordinator(
                 PolicyAction.ALLOW -> {
                     val executor = executors.firstOrNull { it.canExecute(step) }
                     if (executor == null) {
-                        entries += TraceEntry(
+                        val entry = TraceEntry(
                             stepId = step.id,
                             description = step.description,
                             status = StepStatus.SKIPPED,
                             executorName = "ExecutionCoordinator",
                             detail = "No executor available"
                         )
+                        entries += entry
+                        onProgress?.invoke(entry)
                         continue
                     }
 
@@ -72,7 +81,7 @@ class ExecutionCoordinator(
                             try {
                                 val result = executor.execute(step, currentStepObservation)
                                 result.externalAction?.let(externalActions::add)
-                                entries += TraceEntry(
+                                val entry = TraceEntry(
                                     stepId = "${step.id}_$i",
                                     description = "[Step $i] ${step.description}",
                                     status = result.status,
@@ -80,6 +89,8 @@ class ExecutionCoordinator(
                                     thought = result.thought,
                                     detail = result.message
                                 )
+                                entries += entry
+                                onProgress?.invoke(entry)
 
                                 if (result.status != StepStatus.SUCCESS) break
                                 if (result.message.contains("ACTION: DONE", ignoreCase = true)) break
@@ -106,7 +117,7 @@ class ExecutionCoordinator(
                         try {
                             val result = executor.execute(step, observation)
                             result.externalAction?.let(externalActions::add)
-                            entries += TraceEntry(
+                            val entry = TraceEntry(
                                 stepId = step.id,
                                 description = step.description,
                                 status = result.status,
@@ -114,6 +125,8 @@ class ExecutionCoordinator(
                                 thought = result.thought,
                                 detail = result.message
                             )
+                            entries += entry
+                            onProgress?.invoke(entry)
                             
                             // Update observation if the step succeeded
                             if (result.status == StepStatus.SUCCESS) {

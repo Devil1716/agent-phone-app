@@ -1,29 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="primary">#FF14532D</color>
-    <color name="primaryDark">#FF0F3D22</color>
-    <color name="primaryVariant">#FF0A2817</color>
-    <color name="onPrimary">#FFFFFFFF</color>
+    <color name="primary">#FF2DD4BF</color> <!-- Mint Green -->
+    <color name="primaryDark">#FF134E4A</color>
+    <color name="primaryVariant">#FF115E59</color>
+    <color name="onPrimary">#FF000000</color>
 
-    <color name="secondary">#FF0F766E</color>
-    <color name="secondaryVariant">#FF115E59</color>
+    <color name="secondary">#FF94A3B8</color> <!-- Slate -->
+    <color name="secondaryVariant">#FF475569</color>
     <color name="onSecondary">#FFFFFFFF</color>
 
-    <color name="background">#FFF6F6F0</color>
-    <color name="surface">#FFFFFFFF</color>
-    <color name="onBackground">#FF1F2937</color>
-    <color name="onSurface">#FF1F2937</color>
+    <!-- Manus Dark Sleek Background -->
+    <color name="background">#FF0F172A</color> <!-- Deep Slate/Black -->
+    <color name="surface">#FF1E293B</color>
+    <color name="onBackground">#FFF8FAFC</color>
+    <color name="onSurface">#FFF8FAFC</color>
 
-    <color name="error">#FFD32F2F</color>
+    <color name="error">#FFF43F5E</color>
     <color name="onError">#FFFFFFFF</color>
 
-    <color name="traceSuccess">#FF2E7D32</color>
-    <color name="traceBlocked">#FFC62828</color>
-    <color name="tracePending">#FFF9A825</color>
-    <color name="traceSkipped">#FF757575</color>
+    <!-- Glassmorphism Tones -->
+    <color name="glassBackground">#26FFFFFF</color> 
+    <color name="glassStroke">#40FFFFFF</color>
+    <color name="glassText">#E6FFFFFF</color>
 
-    <color name="cardStroke">#2614532D</color>
-    <color name="statusCardBackground">#FFF3FAF6</color>
-    <color name="traceCardBackground">#FFFDFDFC</color>
-    <color name="modelCardBackground">#FFF7FCF8</color>
+    <color name="traceSuccess">#FF10B981</color>
+    <color name="traceBlocked">#FFF43F5E</color>
+    <color name="tracePending">#FFF59E0B</color>
+    <color name="traceSkipped">#FF64748B</color>
+
+    <color name="cardStroke">#1A94A3B8</color>
+    <color name="statusCardBackground">#1A2DD4BF</color>
+    <color name="traceCardBackground">#0F1E293B</color>
+    <color name="modelCardBackground">#0F2DD4BF</color>
 </resources>

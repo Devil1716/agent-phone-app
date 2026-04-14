@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Gemma Agent Phone</string>
-    <string name="accessibility_description">Allows the agent to observe screens and perform approved actions.</string>
-    <string name="main_summary">Open-source-first Android agent app focused on local Gemma with fast-path app control and relay-backed recovery.</string>
-    <string name="open_settings">Open Agent Settings</string>
-    <string name="settings_title">Agent Settings</string>
-    <string name="settings_summary">Choose local providers, a relay fallback, and the model source used for on-device Gemma.</string>
-    <string name="provider_label">Primary provider</string>
-    <string name="model_label">Primary model</string>
-    <string name="fallback_provider_label">Fallback provider</string>
-    <string name="fallback_model_label">Fallback model</string>
-    <string name="autonomy_mode_label">Autonomy mode</string>
+    <string name="app_name">Manus Mobile</string>
+    <string name="accessibility_description">Empowering the Manus Agent to control your device autonomously.</string>
+    <string name="main_summary">The next generation of mobile automation. Local Gemma intelligence with Manus-style oversight.</string>
+    <string name="open_settings">Preferences</string>
+    <string name="settings_title">Agent Preferences</string>
+    <string name="settings_summary">Configure intelligence providers, fallback strategies, and local model orchestration.</string>
+    <string name="provider_label">Primary Intelligence</string>
+    <string name="model_label">Local Task Model</string>
+    <string name="fallback_provider_label">Recovery Provider</string>
+    <string name="fallback_model_label">Recovery Model</string>
+    <string name="autonomy_mode_label">Operational Mode</string>
     <string name="custom_prompt_label">Custom operating prompt</string>
     <string name="custom_prompt_hint">Example: When I ask to send a message, prefer WhatsApp, open the app, draft the text, and only send after a confirmation step.</string>
     <string name="cloud_fallback_label">Allow cloud fallback later if explicitly enabled</string>
