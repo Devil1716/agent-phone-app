@@ -35,21 +35,21 @@ android {
         applicationId = "com.gemma.agentphone"
         minSdk = 28
         targetSdk = 34
-        versionCode = (project.findProperty("versionCode") as String?)?.toInt() ?: 15
-        versionName = (project.findProperty("versionName") as String?) ?: "0.5.0"
+        versionCode = (project.findProperty("versionCode") as String?)?.toInt() ?: 16
+        versionName = (project.findProperty("versionName") as String?) ?: "0.5.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "APP_REPO_OWNER", "\"Devil1716\"")
         buildConfigField("String", "APP_REPO_NAME", "\"agent-phone-app\"")
         buildConfigField(
             "String",
             "DEFAULT_MODEL_DOWNLOAD_URL",
-            "\"https://huggingface.co/AfiOne/gemma3-1b-it-int4.task/resolve/main/gemma3-1b-it-int4.task?download=true\""
+            "\"https://huggingface.co/AfiOne/gemma4-1b-it-int4.task/resolve/main/gemma4-1b-it-int4.task?download=true\""
         )
-        buildConfigField("String", "DEFAULT_MODEL_FILENAME", "\"gemma3-1b-it-int4.task\"")
+        buildConfigField("String", "DEFAULT_MODEL_FILENAME", "\"gemma4-1b-it-int4.task\"")
         buildConfigField(
             "String",
             "DEFAULT_MODEL_SOURCE_PAGE_URL",
-            "\"https://huggingface.co/AfiOne/gemma3-1b-it-int4.task\""
+            "\"https://huggingface.co/AfiOne/gemma4-1b-it-int4.task\""
         )
 
         ndk {

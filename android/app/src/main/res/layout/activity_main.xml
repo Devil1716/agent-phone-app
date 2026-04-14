@@ -61,7 +61,7 @@
                 android:id="@+id/modelStatusText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Gemma 3 · Ready"
+                android:text="Gemma 4 · Ready"
                 android:textColor="@color/primary"
                 android:textSize="12sp"
                 android:layout_marginTop="2dp" />

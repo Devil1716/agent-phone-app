@@ -256,7 +256,7 @@ class MainActivity : AppCompatActivity() {
 
         return when (val status = modelDownloadManager.getStatus()) {
             is ModelDownloadStatus.Ready -> {
-                modelStatusTextView.text = "Gemma 3 · Ready"
+                modelStatusTextView.text = "Gemma 4 · Ready"
                 false
             }
 
