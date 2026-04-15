@@ -4,61 +4,55 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import com.gemma.agentphone.R
-import com.gemma.agentphone.accessibility.ScreenStateReader
-import com.gemma.agentphone.actions.ActionDispatcher
+import androidx.core.content.ContextCompat
 import com.gemma.agentphone.MainActivity
+import com.gemma.agentphone.R
 import com.gemma.agentphone.diagnostics.AppLogger
 import com.gemma.agentphone.model.AiSettingsRepository
-import com.gemma.agentphone.model.GoalCategory
-import com.gemma.agentphone.model.GemmaInferenceEngine
 import com.gemma.agentphone.model.GemmaModelManager
-import kotlinx.coroutines.flow.MutableStateFlow
+import com.gemma.agentphone.model.GoalCategory
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
-import java.util.concurrent.atomic.AtomicBoolean
 
 class AgentOrchestrator(
     private val context: Context,
     private val settingsRepository: AiSettingsRepository = AiSettingsRepository(context),
-    private val modelManager: GemmaModelManager = GemmaModelManager(context),
-    private val engineFactory: (Context, GemmaModelManager) -> TextGenerationEngine = { appContext, manager ->
-        GemmaInferenceEngine(appContext, manager)
-    }
+    private val modelManager: GemmaModelManager = GemmaModelManager(context)
 ) : AgentRuntime {
     companion object {
         private const val TAG = "AgentOrchestrator"
     }
 
-    private val _status = MutableStateFlow<AgentStatus>(AgentStatus.Idle)
-    private val _logs = MutableStateFlow<List<AgentLogEntry>>(emptyList())
-    private val stopRequested = AtomicBoolean(false)
     private val goalInterpreter = RuleBasedGoalInterpreter()
     private val appLaunchExecutor by lazy { AppLaunchExecutor(AndroidInstalledAppResolver(context)) }
     private val browserExecutor = BrowserExecutor()
     private val intentExecutor = IntentExecutor()
 
-    override val status: StateFlow<AgentStatus> = _status.asStateFlow()
-    override val logs: StateFlow<List<AgentLogEntry>> = _logs.asStateFlow()
+    override val status: StateFlow<AgentStatus> = AgentSessionStore.status
+    override val logs: StateFlow<List<AgentLogEntry>> = AgentSessionStore.logs
     override val downloadState = modelManager.downloadState
 
     override fun isModelReady(): Boolean = modelManager.isModelReady()
 
     override suspend fun execute(command: String) {
-        stopRequested.set(false)
-        _logs.value = emptyList()
-        AppLogger.i(context, TAG, "Executing command: $command")
+        val trimmed = command.trim()
+        if (trimmed.isBlank()) {
+            return
+        }
+
+        AgentSessionStore.begin(trimmed)
+        AppLogger.i(context, TAG, "Executing command: $trimmed")
 
         try {
-            if (tryExecuteFastPath(command)) {
+            if (tryExecuteFastPath(trimmed)) {
                 AppLogger.i(context, TAG, "Command completed using deterministic fast path.")
                 return
             }
 
             val settings = settingsRepository.load()
             if (!modelManager.isModelReady()) {
-                _status.value = AgentStatus.Downloading(context.getString(R.string.agent_status_downloading))
+                AgentSessionStore.updateStatus(
+                    AgentStatus.Downloading(context.getString(R.string.agent_status_downloading))
+                )
                 modelManager.ensureModelReady(
                     downloadUrl = settings.modelDownloadUrl,
                     huggingFaceToken = settings.huggingFaceToken
@@ -66,82 +60,59 @@ class AgentOrchestrator(
             }
 
             if (!modelManager.isModelReady()) {
-                _status.value = AgentStatus.Failed(context.getString(R.string.model_not_ready))
-                appendLog("Model", context.getString(R.string.model_not_ready), success = false)
+                val message = context.getString(R.string.model_not_ready)
+                appendLog("Model", message, success = false)
+                AgentSessionStore.updateStatus(AgentStatus.Failed(message))
                 return
             }
 
-            val engine = engineFactory(context, modelManager)
-            val planner = PlannerAgent(engine)
-            val verifier = VerifierAgent(engine)
-            val executor = ExecutorAgent(
-                plannerAgent = planner,
-                verifierAgent = verifier,
-                actionDispatcher = ActionDispatcher(context),
-                screenStateReader = ScreenStateReader()
+            ContextCompat.startForegroundService(
+                context,
+                AgentAutomationService.buildStartIntent(context, trimmed)
             )
-
-            _status.value = AgentStatus.Planning(command)
-            appendLog("Plan", "Gemma 4 is planning the request.", success = null)
-            val plan = planner.plan(command)
-            plan.forEachIndexed { index, step ->
-                appendLog("Step ${index + 1}", step.summary(), success = null, step = step)
-            }
-
-            val result = executor.execute(
-                command = command,
-                initialPlan = plan,
-                emitStatus = { status -> _status.value = status },
-                emitLog = { entry -> _logs.update { current -> current + entry } },
-                shouldStop = { stopRequested.get() }
-            )
-
-            _status.value = if (result.success) {
-                AgentStatus.Completed(result.summary)
-            } else if (stopRequested.get()) {
-                AgentStatus.Stopped(result.summary)
-            } else {
-                AgentStatus.Failed(result.summary)
-            }
         } catch (throwable: Throwable) {
-            AppLogger.e(context, TAG, "Execution failed for command: $command", throwable)
+            AppLogger.e(context, TAG, "Execution failed for command: $trimmed", throwable)
             val message = throwable.localizedMessage ?: "Error running the agent."
             appendLog("Error", message, success = false)
-            _status.value = AgentStatus.Failed(message)
+            AgentSessionStore.updateStatus(AgentStatus.Failed(message))
         }
     }
 
     override suspend fun startModelDownload() {
         try {
             val settings = settingsRepository.load()
-            AppLogger.i(context, TAG, "User started Gemma 4 download from the main screen.")
-            _status.value = AgentStatus.Downloading(context.getString(R.string.agent_status_downloading))
+            AppLogger.i(context, TAG, "User started Gemma model download from the main screen.")
+            AgentSessionStore.updateStatus(
+                AgentStatus.Downloading(context.getString(R.string.agent_status_downloading))
+            )
             modelManager.startOrResumeDownload(settings.modelDownloadUrl, settings.huggingFaceToken)
-            _status.value = AgentStatus.Idle
+            AgentSessionStore.updateStatus(AgentStatus.Idle)
         } catch (throwable: Throwable) {
-            AppLogger.e(context, TAG, "Gemma 4 download failed from the main screen.", throwable)
-            val message = throwable.localizedMessage ?: "Unable to download Gemma 4."
+            AppLogger.e(context, TAG, "Gemma model download failed from the main screen.", throwable)
+            val message = throwable.localizedMessage ?: "Unable to download the Gemma model."
             appendLog("Model", message, success = false)
-            _status.value = AgentStatus.Failed(message)
+            AgentSessionStore.updateStatus(AgentStatus.Failed(message))
         }
     }
 
     override suspend fun importModel(uri: Uri) {
         try {
-            AppLogger.i(context, TAG, "User imported a Gemma 4 model from the main screen.")
+            AppLogger.i(context, TAG, "User imported a Gemma model from the main screen.")
             modelManager.importModel(uri)
-            _status.value = AgentStatus.Idle
+            AgentSessionStore.updateStatus(AgentStatus.Idle)
         } catch (throwable: Throwable) {
-            AppLogger.e(context, TAG, "Gemma 4 import failed from the main screen.", throwable)
-            val message = throwable.localizedMessage ?: "Unable to import the Gemma 4 model."
+            AppLogger.e(context, TAG, "Gemma model import failed from the main screen.", throwable)
+            val message = throwable.localizedMessage ?: "Unable to import the Gemma model."
             appendLog("Model", message, success = false)
-            _status.value = AgentStatus.Failed(message)
+            AgentSessionStore.updateStatus(AgentStatus.Failed(message))
         }
     }
 
     override fun cancelExecution() {
-        stopRequested.set(true)
-        _status.value = AgentStatus.Stopped("Execution stopped.")
+        runCatching {
+            context.startService(AgentAutomationService.buildStopIntent(context))
+        }
+        AgentSessionStore.updateStatus(AgentStatus.Stopped("Execution stopped."))
     }
 
     private fun appendLog(
@@ -150,9 +121,9 @@ class AgentOrchestrator(
         success: Boolean?,
         step: AgentStep? = null
     ) {
-        _logs.update { current ->
-            current + AgentLogEntry(title = title, detail = detail, success = success, step = step)
-        }
+        AgentSessionStore.appendLog(
+            AgentLogEntry(title = title, detail = detail, success = success, step = step)
+        )
     }
 
     private fun tryExecuteFastPath(command: String): Boolean {
@@ -191,7 +162,6 @@ class AgentOrchestrator(
             )
 
             GoalCategory.GENERAL_APP_CONTROL -> null
-
             else -> null
         } ?: return false
 
@@ -215,12 +185,12 @@ class AgentOrchestrator(
 
         val externalAction = result.externalAction
         return if (externalAction != null) {
-            _status.value = AgentStatus.Executing(step.toAgentStep(), 1, 1)
+            AgentSessionStore.updateStatus(AgentStatus.Executing(step.toAgentStep(), 1, 1))
             launchExternalAction(externalAction.spec)
-            _status.value = AgentStatus.Completed(result.message)
+            AgentSessionStore.updateStatus(AgentStatus.Completed(result.message))
             true
         } else {
-            _status.value = AgentStatus.Failed(result.message)
+            AgentSessionStore.updateStatus(AgentStatus.Failed(result.message))
             true
         }
     }

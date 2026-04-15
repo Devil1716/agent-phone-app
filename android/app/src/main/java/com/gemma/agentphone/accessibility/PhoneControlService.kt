@@ -6,6 +6,7 @@ import android.content.Intent
 import android.graphics.Path
 import android.graphics.Rect
 import android.os.Bundle
+import android.os.SystemClock
 import android.provider.Settings
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
@@ -25,17 +26,23 @@ class PhoneControlService : AccessibilityService() {
         }
     }
 
+    private val snapshotter = AccessibilityNodeSnapshotter()
     private var lastPackageName: String = ""
     private var lastActivityName: String = ""
+
+    @Volatile
+    private var latestSnapshot: AccessibilitySnapshot? = null
 
     override fun onServiceConnected() {
         super.onServiceConnected()
         instance = this
+        refreshSnapshot()
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         lastPackageName = event?.packageName?.toString().orEmpty()
         lastActivityName = event?.className?.toString().orEmpty()
+        refreshSnapshot()
     }
 
     override fun onInterrupt() = Unit
@@ -44,6 +51,14 @@ class PhoneControlService : AccessibilityService() {
         super.onDestroy()
         if (instance === this) {
             instance = null
+        }
+    }
+
+    fun captureSnapshot(forceRefresh: Boolean = true): AccessibilitySnapshot? {
+        return if (forceRefresh) {
+            refreshSnapshot()
+        } else {
+            latestSnapshot ?: refreshSnapshot()
         }
     }
 
@@ -60,11 +75,27 @@ class PhoneControlService : AccessibilityService() {
     }
 
     fun tapByCoords(x: Float, y: Float): Boolean {
-        val path = Path().apply {
-            moveTo(x, y)
-        }
+        val path = Path().apply { moveTo(x, y) }
         val gesture = GestureDescription.Builder()
             .addStroke(GestureDescription.StrokeDescription(path, 0L, 60L))
+            .build()
+        return dispatchGesture(gesture, null, null)
+    }
+
+    fun tapNode(nodeId: Int): Boolean {
+        val node = captureSnapshot()?.findNode(nodeId) ?: return false
+        return tapByCoords(node.bounds.centerX.toFloat(), node.bounds.centerY.toFloat())
+    }
+
+    fun longPressNode(nodeId: Int, durationMs: Long = 500L): Boolean {
+        val node = captureSnapshot()?.findNode(nodeId) ?: return false
+        return longPressAt(node.bounds.centerX.toFloat(), node.bounds.centerY.toFloat(), durationMs)
+    }
+
+    fun longPressAt(x: Float, y: Float, durationMs: Long = 500L): Boolean {
+        val path = Path().apply { moveTo(x, y) }
+        val gesture = GestureDescription.Builder()
+            .addStroke(GestureDescription.StrokeDescription(path, 0L, durationMs))
             .build()
         return dispatchGesture(gesture, null, null)
     }
@@ -78,9 +109,35 @@ class PhoneControlService : AccessibilityService() {
         return target.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, arguments)
     }
 
+    fun typeIntoNode(nodeId: Int?, text: String): Boolean {
+        if (nodeId != null) {
+            val target = captureSnapshot()?.findNode(nodeId) ?: return false
+            tapByCoords(target.bounds.centerX.toFloat(), target.bounds.centerY.toFloat())
+            SystemClock.sleep(220L)
+        }
+        return inputText(text)
+    }
+
     fun scrollDown(): Boolean = performSwipe(fromY = 0.72f, toY = 0.28f)
 
     fun scrollUp(): Boolean = performSwipe(fromY = 0.32f, toY = 0.76f)
+
+    fun swipe(
+        startX: Int,
+        startY: Int,
+        endX: Int,
+        endY: Int,
+        durationMs: Long = 260L
+    ): Boolean {
+        val path = Path().apply {
+            moveTo(startX.toFloat(), startY.toFloat())
+            lineTo(endX.toFloat(), endY.toFloat())
+        }
+        val gesture = GestureDescription.Builder()
+            .addStroke(GestureDescription.StrokeDescription(path, 0L, durationMs))
+            .build()
+        return dispatchGesture(gesture, null, null)
+    }
 
     fun pressBack(): Boolean = performGlobalAction(GLOBAL_ACTION_BACK)
 
@@ -118,21 +175,37 @@ class PhoneControlService : AccessibilityService() {
     }
 
     fun getCurrentScreenText(): String {
-        return getVisibleText().joinToString("\n")
+        return captureSnapshot(forceRefresh = false)?.promptTree.orEmpty()
     }
 
     fun getVisibleText(): List<String> {
-        val root = rootInActiveWindow ?: return emptyList()
-        val values = mutableListOf<String>()
-        collectText(root, values)
-        return values.distinct()
+        return captureSnapshot(forceRefresh = false)
+            ?.nodes
+            ?.flatMap { listOf(it.label, it.hint) }
+            ?.map(String::trim)
+            ?.filter(String::isNotBlank)
+            ?.distinct()
+            .orEmpty()
     }
 
     fun currentPackageName(): String {
-        return rootInActiveWindow?.packageName?.toString() ?: lastPackageName
+        return captureSnapshot(forceRefresh = false)?.packageName ?: lastPackageName
     }
 
-    fun currentActivityName(): String = lastActivityName
+    fun currentActivityName(): String = captureSnapshot(forceRefresh = false)?.activityName ?: lastActivityName
+
+    private fun refreshSnapshot(): AccessibilitySnapshot? {
+        val root = rootInActiveWindow ?: return latestSnapshot
+        return try {
+            snapshotter.capture(
+                root = root,
+                packageNameHint = root.packageName?.toString().orEmpty().ifBlank { lastPackageName },
+                activityNameHint = lastActivityName
+            ).also { latestSnapshot = it }
+        } finally {
+            root.recycle()
+        }
+    }
 
     private fun findNodeByText(node: AccessibilityNodeInfo, text: String): AccessibilityNodeInfo? {
         val target = text.trim().lowercase()
@@ -177,17 +250,6 @@ class PhoneControlService : AccessibilityService() {
             current = current.parent
         }
         return null
-    }
-
-    private fun collectText(node: AccessibilityNodeInfo?, output: MutableList<String>) {
-        if (node == null || output.size >= 120) {
-            return
-        }
-        node.text?.toString()?.trim()?.takeIf { it.isNotBlank() }?.let(output::add)
-        node.contentDescription?.toString()?.trim()?.takeIf { it.isNotBlank() }?.let(output::add)
-        for (index in 0 until node.childCount) {
-            collectText(node.getChild(index), output)
-        }
     }
 
     private fun performTap(node: AccessibilityNodeInfo): Boolean {

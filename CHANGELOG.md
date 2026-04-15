@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.0] - 2026-04-15
+
+### Added
+- **On-device cognitive loop** - Introduced a foreground `AgentAutomationService` plus `AccessibilityAgentLoop` that performs a strict perceive, plan, execute, and reflect cycle using the live accessibility tree.
+- **Filtered accessibility perception** - Added `AccessibilityNodeSnapshotter` and snapshot models that prune invisible, empty, and non-meaningful nodes before prompting Gemma, reducing prompt size and improving action reliability.
+- **Strict JSON action contract** - Added dedicated action command, parser, and dispatcher classes for single-step `TAP`, `SWIPE`, `TYPE`, `LONG_PRESS`, `WAIT`, `BACK`, `HOME`, and `COMPLETE` responses.
+- **Compose operator dashboard** - Rebuilt the main dashboard in Jetpack Compose with a glassmorphism control surface, live runtime state, model download controls, and streamed loop logs.
+- **Research-style internals documentation** - Added a formal architecture document with screenshots and diagrams describing the runtime pipeline, prompt contract, and failure handling.
+
+### Changed
+- **Manifest and runtime wiring** - Registered the foreground automation service, enabled Compose, and routed general app-control commands through the new accessibility-driven loop while preserving safe deterministic fast paths.
+- **Gemma inference initialization** - Updated the MediaPipe runtime to prefer GPU execution when available and automatically fall back to default and CPU backends.
+- **Android tests** - Reworked instrumentation coverage around the new Compose activity/runtime flow while keeping emulator execution stable.
+
+### Verified
+- `./gradlew.bat testDebugUnitTest --console=plain`
+- `./gradlew.bat connectedDebugAndroidTest --console=plain`
+- `./gradlew.bat assembleRelease --console=plain`
+
 ## [0.5.10] - 2026-04-15
 
 ### Fixed

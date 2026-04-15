@@ -1,5 +1,7 @@
 # Architecture
 
+See also: [Research Agent Automation](RESEARCH_AGENT_AUTOMATION.md)
+
 ## Runtime Layers
 
 - Input layer for voice, text, and quick actions

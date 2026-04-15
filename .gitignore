@@ -2,6 +2,7 @@
 build/
 */build/
 android/.gradle/
+android/.gradle-user-home/
 android/app/build/
 .idea/
 local.properties

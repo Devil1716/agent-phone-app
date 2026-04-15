@@ -3,14 +3,18 @@ package com.gemma.agentphone.model
 import android.content.Context
 import com.gemma.agentphone.agent.TextGenerationEngine
 import com.gemma.agentphone.diagnostics.AppLogger
+import com.google.common.util.concurrent.MoreExecutors
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.google.mediapipe.tasks.genai.llminference.LlmInference.LlmInferenceOptions
 import com.google.mediapipe.tasks.genai.llminference.LlmInferenceSession
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 class GemmaInferenceEngine(
     private val context: Context,
@@ -22,6 +26,7 @@ class GemmaInferenceEngine(
 
     private val inferenceMutex = Mutex()
     private var inference: LlmInference? = null
+    private var activeBackend: LlmInference.Backend = LlmInference.Backend.DEFAULT
 
     override suspend fun generate(prompt: String): String = withContext(Dispatchers.IO) {
         var lastFailure: Throwable? = null
@@ -32,17 +37,18 @@ class GemmaInferenceEngine(
                 val sessionOptions = LlmInferenceSession.LlmInferenceSessionOptions.builder()
                     .setTemperature(0.05f)
                     .setTopK(40)
+                    .setTopP(0.9f)
                     .build()
                 val session = LlmInferenceSession.createFromOptions(llm, sessionOptions)
                 try {
                     session.addQueryChunk(prompt)
-                    val response = session.generateResponse().trim()
+                    val response = session.generateResponseAsync().await().trim()
                     validateStructuredResponse(prompt, response)
                     val latencyMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNs)
                     AppLogger.i(
                         context,
                         TAG,
-                        "Gemma 4 inference succeeded on attempt ${attempt + 1} in ${latencyMs}ms."
+                        "Gemma inference succeeded on attempt ${attempt + 1} in ${latencyMs}ms using $activeBackend."
                     )
                     return@withContext response
                 } finally {
@@ -53,31 +59,56 @@ class GemmaInferenceEngine(
                 AppLogger.w(
                     context,
                     TAG,
-                    "Gemma 4 inference attempt ${attempt + 1} failed. Resetting the runtime.",
+                    "Gemma inference attempt ${attempt + 1} failed. Resetting the runtime.",
                     throwable
                 )
                 reset()
                 runCatching { System.gc() }
             }
         }
-        throw IllegalStateException(lastFailure?.localizedMessage ?: "Gemma 4 inference failed after retries.")
+        throw IllegalStateException(lastFailure?.localizedMessage ?: "Gemma inference failed after retries.")
     }
 
     private suspend fun getOrCreateInference(): LlmInference {
         return inferenceMutex.withLock {
             inference?.let { return@withLock it }
             if (!modelManager.isModelReady()) {
-                throw IllegalStateException("Gemma 4 model is not ready yet.")
+                throw IllegalStateException("Gemma model is not ready yet.")
             }
-            val options = LlmInferenceOptions.builder()
-                .setModelPath(modelManager.getModelPath())
-                .setMaxTokens(1536)
-                .setMaxTopK(64)
-                .build()
-            LlmInference.createFromOptions(context, options).also {
-                AppLogger.i(context, TAG, "Gemma 4 runtime loaded from ${modelManager.getModelPath()}.")
-                inference = it
+
+            val attempts = listOf(
+                LlmInference.Backend.GPU,
+                LlmInference.Backend.DEFAULT,
+                LlmInference.Backend.CPU
+            ).distinct()
+            var lastFailure: Throwable? = null
+
+            for (backend in attempts) {
+                try {
+                    val options = LlmInferenceOptions.builder()
+                        .setModelPath(modelManager.getModelPath())
+                        .setMaxTokens(1536)
+                        .setMaxTopK(64)
+                        .setPreferredBackend(backend)
+                        .build()
+                    return@withLock LlmInference.createFromOptions(context, options).also {
+                        activeBackend = backend
+                        inference = it
+                        AppLogger.i(
+                            context,
+                            TAG,
+                            "Gemma runtime loaded from ${modelManager.getModelPath()} with backend $backend."
+                        )
+                    }
+                } catch (throwable: Throwable) {
+                    lastFailure = throwable
+                    AppLogger.w(context, TAG, "Gemma backend $backend failed to initialize.", throwable)
+                }
             }
+
+            throw IllegalStateException(
+                lastFailure?.localizedMessage ?: "Unable to initialize the Gemma runtime."
+            )
         }
     }
 
@@ -85,22 +116,40 @@ class GemmaInferenceEngine(
         inferenceMutex.withLock {
             runCatching { inference?.close() }
             inference = null
+            activeBackend = LlmInference.Backend.DEFAULT
         }
     }
 
     private fun validateStructuredResponse(prompt: String, response: String) {
-        require(response.isNotBlank()) { "Gemma 4 returned an empty response." }
-        val expectsJson = prompt.contains("ONLY a JSON array", ignoreCase = true) ||
-            prompt.contains("ONLY with JSON", ignoreCase = true) ||
+        require(response.isNotBlank()) { "Gemma returned an empty response." }
+        val expectsJson = prompt.contains("ONLY one JSON object", ignoreCase = true) ||
+            prompt.contains("Reply ONLY with one JSON object", ignoreCase = true) ||
             prompt.contains("Reply ONLY with JSON", ignoreCase = true)
         if (!expectsJson) {
             return
         }
 
-        val looksLikeArray = response.contains('[') && response.contains(']')
         val looksLikeObject = response.contains('{') && response.contains('}')
-        require(looksLikeArray || looksLikeObject) {
-            "Gemma 4 returned a truncated structured response."
+        require(looksLikeObject) {
+            "Gemma returned a truncated structured response."
+        }
+    }
+
+    private suspend fun <T> com.google.common.util.concurrent.ListenableFuture<T>.await(): T {
+        return suspendCancellableCoroutine { continuation ->
+            addListener(
+                {
+                    try {
+                        continuation.resume(get())
+                    } catch (throwable: Throwable) {
+                        continuation.resumeWithException(throwable)
+                    }
+                },
+                MoreExecutors.directExecutor()
+            )
+            continuation.invokeOnCancellation {
+                cancel(true)
+            }
         }
     }
 }
