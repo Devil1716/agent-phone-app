@@ -28,11 +28,7 @@ class VerifierAgent(
             """.trimIndent()
         )
 
-        return parseVerification(response) ?: VerificationResult(
-            success = true,
-            reason = "Gemma returned a non-JSON verification response. Continuing.",
-            nextHint = ""
-        )
+        return parseVerification(response) ?: fallbackStepVerification(screenState, lastAction)
     }
 
     suspend fun confirmCompletion(command: String, screenState: ScreenState): VerificationResult {
@@ -54,11 +50,7 @@ class VerifierAgent(
             """.trimIndent()
         )
 
-        return parseVerification(response) ?: VerificationResult(
-            success = true,
-            reason = "Gemma returned a non-JSON completion response. Assuming the task is complete.",
-            nextHint = ""
-        )
+        return parseVerification(response) ?: fallbackCompletionVerification(command, screenState)
     }
 
     private fun parseVerification(raw: String): VerificationResult? {
@@ -75,5 +67,67 @@ class VerifierAgent(
                 nextHint = json.get("next_hint")?.asString.orEmpty()
             )
         }.getOrNull()
+    }
+
+    private fun fallbackStepVerification(
+        screenState: ScreenState,
+        lastAction: AgentStep
+    ): VerificationResult {
+        val visibleText = screenState.visibleText.joinToString("\n").lowercase()
+        return when (lastAction.normalizedAction) {
+            "LAUNCH_APP" -> {
+                val target = lastAction.target.lowercase()
+                val launched = screenState.packageName.contains(target) ||
+                    visibleText.contains(target) ||
+                    (target.contains("play store") && screenState.packageName.contains("vending"))
+                VerificationResult(
+                    success = launched,
+                    reason = if (launched) {
+                        "The requested app appears to be open."
+                    } else {
+                        "The target app does not appear to be open yet."
+                    },
+                    nextHint = if (launched) "" else "Launch the requested app and verify the screen changed."
+                )
+            }
+
+            else -> VerificationResult(
+                success = false,
+                reason = "Gemma did not return valid verification JSON.",
+                nextHint = "Inspect the live screen and continue the task from what is visible."
+            )
+        }
+    }
+
+    private fun fallbackCompletionVerification(
+        command: String,
+        screenState: ScreenState
+    ): VerificationResult {
+        val normalizedCommand = command.lowercase()
+        val visibleText = screenState.visibleText.map { it.lowercase() }
+        if (mentionsPlayStoreInstall(normalizedCommand)) {
+            val looksInstalled = visibleText.any { it == "installed" } ||
+                (visibleText.any { it == "open" } && visibleText.any { it == "uninstall" })
+            return VerificationResult(
+                success = looksInstalled,
+                reason = if (looksInstalled) {
+                    "The Play Store shows the installed/open state."
+                } else {
+                    "The Play Store does not show the installed/open state yet."
+                },
+                nextHint = if (looksInstalled) "" else "Stay in the Play Store flow until Install changes to Open or Installed."
+            )
+        }
+        return VerificationResult(
+            success = false,
+            reason = "Gemma did not return valid completion JSON.",
+            nextHint = "Continue until the result is visibly complete on screen."
+        )
+    }
+
+    private fun mentionsPlayStoreInstall(command: String): Boolean {
+        val mentionsStore = command.contains("play store") || command.contains("google play") || command.contains("playstore")
+        val mentionsInstall = command.contains("download") || command.contains("install")
+        return mentionsStore && mentionsInstall
     }
 }

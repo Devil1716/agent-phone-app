@@ -40,6 +40,20 @@ class PlannerAgentTest {
         assertThat(plan.last().normalizedAction).isEqualTo("DONE")
         assertThat(plan).hasSize(2)
     }
+
+    @Test
+    fun usesDeterministicPlayStoreInstallPlan() = runBlocking {
+        val engine = FakeEngine(responses = ArrayDeque())
+
+        val plan = PlannerAgent(engine).plan("open play store and download subway surfers")
+
+        assertThat(plan.map { it.normalizedAction })
+            .containsExactly("LAUNCH_APP", "SEARCH", "TAP_TEXT", "TAP_TEXT", "WAIT", "DONE")
+            .inOrder()
+        assertThat(plan[1].target).contains("Search apps & games")
+        assertThat(plan[1].value).isEqualTo("subway surfers")
+        assertThat(engine.calls).isEqualTo(0)
+    }
 }
 
 private class FakeEngine(

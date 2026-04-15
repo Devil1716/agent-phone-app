@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.10] - 2026-04-15
+
+### Fixed
+- **Full Task Continuation** - Removed the `GENERAL_APP_CONTROL` fast path that only launched an app and stopped. Commands like "open Play Store and download Subway Surfers" now stay in the full planner/executor loop.
+- **Play Store Install Reliability** - Added a deterministic Play Store install plan so download/install requests search, open the app listing, tap install, and wait for the visible install state instead of relying on a short partial plan.
+- **Safer Completion Checks** - Verifier fallback is now fail-safe instead of fail-open. If Gemma returns malformed verification JSON, the agent keeps working from the live screen instead of silently treating the task as done.
+- **UI Target Matching** - Accessibility text taps now support fallback aliases like `Search|Search apps & games`, which improves search-field matching across different Play Store screens and device variants.
+
 ## [0.5.3] - 2026-04-14
 
 ### Fixed

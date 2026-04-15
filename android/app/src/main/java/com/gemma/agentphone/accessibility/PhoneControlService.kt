@@ -49,8 +49,14 @@ class PhoneControlService : AccessibilityService() {
 
     fun tapByText(text: String): Boolean {
         val root = rootInActiveWindow ?: return false
-        val target = findNodeByText(root, text) ?: return false
-        return target.performAction(AccessibilityNodeInfo.ACTION_CLICK) || performTap(target)
+        val candidates = text.split('|').map { it.trim() }.filter { it.isNotBlank() }
+        for (candidate in candidates.ifEmpty { listOf(text) }) {
+            val target = findNodeByText(root, candidate) ?: continue
+            if (target.performAction(AccessibilityNodeInfo.ACTION_CLICK) || performTap(target)) {
+                return true
+            }
+        }
+        return false
     }
 
     fun tapByCoords(x: Float, y: Float): Boolean {
@@ -93,7 +99,7 @@ class PhoneControlService : AccessibilityService() {
         )
         val match = launchables
             .mapNotNull { info ->
-                val label = info.loadLabel(packageManager)?.toString().orEmpty()
+                val label = info.loadLabel(packageManager).toString()
                 val packageName = info.activityInfo?.packageName ?: return@mapNotNull null
                 packageName to label
             }

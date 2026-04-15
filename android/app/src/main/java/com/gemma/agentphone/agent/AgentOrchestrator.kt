@@ -190,19 +190,7 @@ class AgentOrchestrator(
                 payload = goal.targetValue
             )
 
-            GoalCategory.GENERAL_APP_CONTROL -> {
-                if (goal.shouldOpenAppFirst && !goal.targetApp.isNullOrBlank()) {
-                    TaskStep(
-                        id = "fast-app-launch",
-                        type = StepType.OPEN_APP,
-                        description = goal.understanding ?: "Open ${goal.targetApp}.",
-                        targetApp = goal.targetApp,
-                        payload = goal.targetValue
-                    )
-                } else {
-                    null
-                }
-            }
+            GoalCategory.GENERAL_APP_CONTROL -> null
 
             else -> null
         } ?: return false

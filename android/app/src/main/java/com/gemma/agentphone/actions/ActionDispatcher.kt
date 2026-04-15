@@ -62,7 +62,7 @@ class ActionDispatcher(
     }
 
     private suspend fun executeSearch(step: AgentStep): ActionResult {
-        val targetField = step.target.ifBlank { "Search" }
+        val targetField = step.target.ifBlank { "Search|Search apps & games|Search for apps & games" }
         tapAction.execute(step.copy(action = "TAP_TEXT", target = targetField))
         val inputResult = inputTextAction.execute(step.copy(action = "INPUT_TEXT"))
         if (!inputResult.success) {

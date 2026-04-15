@@ -8,6 +8,12 @@ class PlannerAgent(
     private val engine: TextGenerationEngine,
     private val gson: Gson = Gson()
 ) {
+    private val playStoreSearchTargets = listOf(
+        "Search apps & games",
+        "Search for apps & games",
+        "Search"
+    )
+
     private val allowedActions = setOf(
         "LAUNCH_APP",
         "TAP_TEXT",
@@ -23,6 +29,7 @@ class PlannerAgent(
     )
 
     suspend fun plan(command: String): List<AgentStep> {
+        templatePlanFor(command)?.let { return it }
         return requestPlan(buildPrompt(command, null, null, ""))
     }
 
@@ -32,7 +39,16 @@ class PlannerAgent(
         failedStep: AgentStep,
         verifierHint: String
     ): List<AgentStep> {
+        templatePlanFor(command, verifierHint)?.let { return adaptTemplateForScreen(it, screenState) }
         return requestPlan(buildPrompt(command, screenState, failedStep, verifierHint))
+    }
+
+    private fun templatePlanFor(command: String, verifierHint: String = ""): List<AgentStep>? {
+        val normalized = command.trim().lowercase()
+        return when {
+            mentionsPlayStoreInstall(normalized) -> buildPlayStoreInstallPlan(command, verifierHint)
+            else -> null
+        }
     }
 
     private suspend fun requestPlan(prompt: String): List<AgentStep> {
@@ -94,6 +110,53 @@ class PlannerAgent(
         return hasRealWork
     }
 
+    private fun mentionsPlayStoreInstall(command: String): Boolean {
+        val mentionsStore = command.contains("play store") || command.contains("google play") || command.contains("playstore")
+        val mentionsInstall = command.contains("download") || command.contains("install")
+        return mentionsStore && mentionsInstall
+    }
+
+    private fun buildPlayStoreInstallPlan(command: String, verifierHint: String): List<AgentStep> {
+        val appName = extractPlayStoreAppName(command)
+        val searchTarget = playStoreSearchTargets.joinToString(separator = "|")
+        val steps = mutableListOf(
+            AgentStep("LAUNCH_APP", "Play Store", "", "Open the Play Store first."),
+            AgentStep("SEARCH", searchTarget, appName, "Search Play Store for $appName."),
+            AgentStep("TAP_TEXT", appName, "", "Open the $appName app listing."),
+            AgentStep("TAP_TEXT", "Install|Update|Pre-register", "", "Start installing $appName from the Play Store."),
+            AgentStep("WAIT", "", "", "Wait for the Play Store install state to update.")
+        )
+        if (verifierHint.contains("open", ignoreCase = true) || verifierHint.contains("installed", ignoreCase = true)) {
+            steps += AgentStep("TAP_TEXT", "Open", "", "Open $appName after installation if the button is available.")
+        }
+        steps += AgentStep("DONE", "", "", "The Play Store flow is complete once install or open state is visible.")
+        return steps
+    }
+
+    private fun extractPlayStoreAppName(command: String): String {
+        val cleaned = command
+            .replace(Regex("(?i)^open\\s+(the\\s+)?(google\\s+play|play\\s*store)\\s+(and|then)\\s+"), "")
+            .replace(Regex("(?i)(download|install|get)\\s+"), "")
+            .replace(Regex("(?i)\\s+(from|on|using)\\s+(the\\s+)?(google\\s+play|play\\s*store)"), "")
+            .replace(Regex("(?i)\\s+app\\b"), "")
+            .replace(Regex("\\s+"), " ")
+            .trim(' ', '.', ',', '"', '\'')
+        return cleaned.ifBlank { "the requested app" }
+    }
+
+    private fun adaptTemplateForScreen(
+        template: List<AgentStep>,
+        screenState: ScreenState
+    ): List<AgentStep> {
+        val inPlayStore = screenState.packageName.contains("vending", ignoreCase = true)
+        val visibleText = screenState.visibleText.joinToString("\n").lowercase()
+        return template.filterNot { step ->
+            step.normalizedAction == "LAUNCH_APP" && inPlayStore
+        }.filterNot { step ->
+            step.normalizedAction == "SEARCH" && visibleText.contains("install")
+        }
+    }
+
     private fun buildPrompt(
         command: String,
         screenState: ScreenState?,
@@ -122,6 +185,9 @@ class PlannerAgent(
             {"action": string, "target": string, "value": string, "reason": string}
             Do not truncate the JSON. Finish the entire plan before stopping.
             Prefer complete, moderate-length plans that finish the task instead of short partial plans.
+            If the user asks to open an app and then do something inside it, the plan must continue inside that app.
+            Never stop after only LAUNCH_APP unless the user's whole request was just opening the app.
+            For Play Store install requests, include opening Play Store, searching, opening the app listing, tapping Install, waiting for install progress, and only then DONE.
 
             Valid actions:
             LAUNCH_APP, TAP_TEXT, TAP_COORDS, INPUT_TEXT, SCROLL_DOWN, SCROLL_UP,
