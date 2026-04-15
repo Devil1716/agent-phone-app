@@ -21,30 +21,39 @@ class HttpAiProvider(
         }
 
         val body = json.toString().toRequestBody("application/json".toMediaType())
-
         val httpRequest = Request.Builder()
             .url("$baseUrl/infer")
             .post(body)
             .build()
 
-        val startTime = System.currentTimeMillis()
-        val response = client.newCall(httpRequest).execute()
-        val latency = System.currentTimeMillis() - startTime
+        return runCatching {
+            val startTime = System.currentTimeMillis()
+            client.newCall(httpRequest).execute().use { response ->
+                val latency = System.currentTimeMillis() - startTime
 
-        return if (response.isSuccessful) {
-            val responseJson = JSONObject(response.body?.string() ?: "{}")
+                if (response.isSuccessful) {
+                    val responseJson = JSONObject(response.body?.string() ?: "{}")
+                    AiResponse(
+                        providerId = descriptor.id,
+                        model = descriptor.models.firstOrNull().orEmpty(),
+                        summary = responseJson.optString("summary", "Response received"),
+                        latencyMs = latency
+                    )
+                } else {
+                    AiResponse(
+                        providerId = descriptor.id,
+                        model = descriptor.models.firstOrNull().orEmpty(),
+                        summary = "Error: ${response.message}",
+                        latencyMs = latency
+                    )
+                }
+            }
+        }.getOrElse { throwable ->
             AiResponse(
                 providerId = descriptor.id,
-                model = descriptor.models.first(),
-                summary = responseJson.optString("summary", "Response received"),
-                latencyMs = latency
-            )
-        } else {
-            AiResponse(
-                providerId = descriptor.id,
-                model = descriptor.models.first(),
-                summary = "Error: ${response.message}",
-                latencyMs = latency
+                model = descriptor.models.firstOrNull().orEmpty(),
+                summary = "Error: ${throwable.localizedMessage ?: "Relay provider failed."}",
+                latencyMs = 0L
             )
         }
     }

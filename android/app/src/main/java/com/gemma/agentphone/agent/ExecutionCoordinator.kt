@@ -7,7 +7,8 @@ class ExecutionCoordinator(
     private val taskPlanner: TaskPlanner,
     private val policyEngine: PolicyEngine,
     private val observationService: ObservationService,
-    private val executors: List<ActionExecutor>
+    private val executors: List<ActionExecutor>,
+    private val externalActionDispatcher: ((ExternalActionRequest) -> Unit)? = null
 ) {
     companion object {
         private const val MAX_AUTONOMOUS_STEPS = 5
@@ -21,7 +22,17 @@ class ExecutionCoordinator(
         var observation = observationService.capture()
         val plan = taskPlanner.plan(goal, observation)
         val entries = mutableListOf<TraceEntry>()
-        val externalActions = mutableListOf<ExternalActionRequest>()
+        val pendingExternalActions = mutableListOf<ExternalActionRequest>()
+        val understandingEntry = TraceEntry(
+            stepId = "understand_request",
+            description = "Understand the request",
+            status = StepStatus.SUCCESS,
+            executorName = "GoalInterpreter",
+            thought = goal.understanding ?: "Analyzing the command and selecting the safest execution path.",
+            detail = buildGoalSummary(goal)
+        )
+        entries += understandingEntry
+        onProgress?.invoke(understandingEntry)
 
         for (step in plan.steps) {
             val decision = policyEngine.classify(step)
@@ -46,18 +57,18 @@ class ExecutionCoordinator(
                         status = StepStatus.PENDING_CONFIRMATION,
                         executorName = "PolicyEngine",
                         detail = decision.reason
-                    )
-                    entries += entry
-                    onProgress?.invoke(entry)
-                    return ExecutionTrace(
-                        goal = goal,
-                        strategy = plan.strategy,
-                        entries = entries,
-                        finalMessage = "Waiting for user confirmation before continuing.",
-                        awaitingConfirmation = true,
-                        externalActions = externalActions
-                    )
-                }
+                        )
+                        entries += entry
+                        onProgress?.invoke(entry)
+                        return ExecutionTrace(
+                            goal = goal,
+                            strategy = plan.strategy,
+                            entries = entries,
+                            finalMessage = "Waiting for user confirmation before continuing.",
+                            awaitingConfirmation = true,
+                            externalActions = pendingExternalActions
+                        )
+                    }
 
                 PolicyAction.ALLOW -> {
                     val executor = executors.firstOrNull { it.canExecute(step) }
@@ -80,7 +91,7 @@ class ExecutionCoordinator(
                         for (i in 1..MAX_AUTONOMOUS_STEPS) {
                             try {
                                 val result = executor.execute(step, currentStepObservation)
-                                result.externalAction?.let(externalActions::add)
+                                dispatchOrQueue(result.externalAction, pendingExternalActions)
                                 val entry = TraceEntry(
                                     stepId = "${step.id}_$i",
                                     description = "[Step $i] ${step.description}",
@@ -116,7 +127,7 @@ class ExecutionCoordinator(
                     } else {
                         try {
                             val result = executor.execute(step, observation)
-                            result.externalAction?.let(externalActions::add)
+                            dispatchOrQueue(result.externalAction, pendingExternalActions)
                             val entry = TraceEntry(
                                 stepId = step.id,
                                 description = step.description,
@@ -151,7 +162,30 @@ class ExecutionCoordinator(
             strategy = plan.strategy,
             entries = entries,
             finalMessage = "Execution completed. Iterative steps performed where necessary.",
-            externalActions = externalActions
+            externalActions = pendingExternalActions
         )
+    }
+
+    private fun dispatchOrQueue(
+        action: ExternalActionRequest?,
+        pendingExternalActions: MutableList<ExternalActionRequest>
+    ) {
+        if (action == null) {
+            return
+        }
+
+        if (externalActionDispatcher == null) {
+            pendingExternalActions += action
+            return
+        }
+
+        externalActionDispatcher.invoke(action)
+    }
+
+    private fun buildGoalSummary(goal: com.gemma.agentphone.model.UserGoal): String {
+        val target = goal.targetApp?.let { " | target app: $it" }.orEmpty()
+        val targetValue = goal.targetValue?.takeIf { it.isNotBlank() }?.let { " | target value: $it" }.orEmpty()
+        val launchHint = if (goal.shouldOpenAppFirst) " | open app first" else ""
+        return "Category: ${goal.category}$target$targetValue$launchHint"
     }
 }

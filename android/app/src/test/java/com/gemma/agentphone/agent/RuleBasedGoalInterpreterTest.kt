@@ -13,6 +13,7 @@ class RuleBasedGoalInterpreterTest {
 
         assertThat(goal.category).isEqualTo(GoalCategory.OPEN_SETTINGS)
         assertThat(goal.targetValue).isEqualTo("wifi")
+        assertThat(goal.understanding).contains("Wi-Fi settings")
     }
 
     @Test
@@ -29,6 +30,16 @@ class RuleBasedGoalInterpreterTest {
 
         assertThat(goal.category).isEqualTo(GoalCategory.GENERAL_APP_CONTROL)
         assertThat(goal.targetApp).isEqualTo("calculator")
+        assertThat(goal.shouldOpenAppFirst).isTrue()
+    }
+
+    @Test
+    fun extractsOpenAppTargetFromLongerCommand() {
+        val goal = interpreter.interpret("open play store and find a notes app")
+
+        assertThat(goal.category).isEqualTo(GoalCategory.GENERAL_APP_CONTROL)
+        assertThat(goal.targetApp).isEqualTo("play store")
+        assertThat(goal.shouldOpenAppFirst).isTrue()
     }
 
     @Test

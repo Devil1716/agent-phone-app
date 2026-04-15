@@ -28,8 +28,9 @@ class ExecutionCoordinatorTest {
 
         assertThat(trace.goal.category).isEqualTo(GoalCategory.OPEN_SETTINGS)
         assertThat(trace.strategy).isEqualTo(ExecutionStrategy.FAST_PATH)
-        assertThat(trace.entries).hasSize(1)
-        assertThat(trace.entries[0].status).isEqualTo(StepStatus.SUCCESS)
+        assertThat(trace.entries).hasSize(2)
+        assertThat(trace.entries[0].description).isEqualTo("Understand the request")
+        assertThat(trace.entries[1].status).isEqualTo(StepStatus.SUCCESS)
         assertThat(trace.externalActions).hasSize(1)
         assertThat(trace.externalActions[0].spec.action).isEqualTo("android.settings.WIFI_SETTINGS")
         assertThat(trace.awaitingConfirmation).isFalse()
@@ -41,8 +42,9 @@ class ExecutionCoordinatorTest {
         val trace = runBlocking { coordinator.run("search the web for Gemma") }
 
         assertThat(trace.goal.category).isEqualTo(GoalCategory.WEB_SEARCH)
-        assertThat(trace.entries).hasSize(1)
-        assertThat(trace.entries[0].status).isEqualTo(StepStatus.SUCCESS)
+        assertThat(trace.entries).hasSize(2)
+        assertThat(trace.entries[0].description).isEqualTo("Understand the request")
+        assertThat(trace.entries[1].status).isEqualTo(StepStatus.SUCCESS)
         assertThat(trace.externalActions).hasSize(1)
         assertThat(trace.externalActions[0].spec.data).contains("google.com/search")
     }
@@ -78,13 +80,34 @@ class ExecutionCoordinatorTest {
     }
 
     @Test
+    fun openCommandPlansLaunchBeforeAutonomousControl() {
+        val plan = TemplateTaskPlanner().plan(
+            goal = UserGoal(
+                text = "open play store and search for a notes app",
+                category = GoalCategory.GENERAL_APP_CONTROL,
+                targetApp = "play store",
+                requiresFastPath = false
+            ),
+            observation = ScreenObservation(
+                foregroundApp = "com.gemma.agentphone",
+                visibleText = emptyList(),
+                timestampMs = 0L
+            )
+        )
+
+        assertThat(plan.steps).hasSize(2)
+        assertThat(plan.steps.first().type).isEqualTo(StepType.OPEN_APP)
+        assertThat(plan.steps.last().type).isEqualTo(StepType.EXECUTE_AUTONOMOUSLY)
+    }
+
+    @Test
     fun noExecutorAvailableSkipsStep() {
         // Coordinator with no executors
         val coordinator = buildCoordinator(executors = emptyList())
         val trace = runBlocking { coordinator.run("open Wi-Fi settings") }
 
-        assertThat(trace.entries).hasSize(1)
-        assertThat(trace.entries[0].status).isEqualTo(StepStatus.SKIPPED)
+        assertThat(trace.entries).hasSize(2)
+        assertThat(trace.entries[1].status).isEqualTo(StepStatus.SKIPPED)
         assertThat(trace.externalActions).isEmpty()
     }
 

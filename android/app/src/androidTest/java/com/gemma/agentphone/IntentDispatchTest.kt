@@ -6,7 +6,6 @@ import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
-import android.widget.Button
 import android.widget.EditText
 import org.junit.After
 import org.junit.Before
@@ -42,7 +41,7 @@ class IntentDispatchTest {
     fun dispatchesWifiSettingsIntent() {
         activityRule.scenario.onActivity { activity ->
             activity.findViewById<EditText>(R.id.commandInput).setText("open Wi-Fi settings")
-            activity.findViewById<Button>(R.id.runCommandButton).performClick()
+            activity.findViewById<android.view.View>(R.id.runCommandButton).performClick()
         }
         waitForLaunch()
 
@@ -59,7 +58,7 @@ class IntentDispatchTest {
     fun dispatchesBrowserSearchIntent() {
         activityRule.scenario.onActivity { activity ->
             activity.findViewById<EditText>(R.id.commandInput).setText("search the web for Gemma")
-            activity.findViewById<Button>(R.id.runCommandButton).performClick()
+            activity.findViewById<android.view.View>(R.id.runCommandButton).performClick()
         }
         waitForLaunch()
         
@@ -68,10 +67,10 @@ class IntentDispatchTest {
     }
 
     @Test
-    fun dispatchesInstalledAppLaunchForGmail() {
+    fun dispatchesInstalledAppLaunchForSettings() {
         activityRule.scenario.onActivity { activity ->
-            activity.findViewById<EditText>(R.id.commandInput).setText("gmail")
-            activity.findViewById<Button>(R.id.runCommandButton).performClick()
+            activity.findViewById<EditText>(R.id.commandInput).setText("settings")
+            activity.findViewById<android.view.View>(R.id.runCommandButton).performClick()
         }
         waitForLaunch()
 
@@ -82,7 +81,7 @@ class IntentDispatchTest {
             val launch = launchedSpecs.lastOrNull()
             assertThat(launch).isNotNull()
             assertThat(launch!!.action).isEqualTo(android.content.Intent.ACTION_MAIN)
-            assertThat(launch.packageName).isEqualTo("com.google.android.gm")
+            assertThat(launch.packageName).isEqualTo("com.android.settings")
         }
     }
 
@@ -110,7 +109,7 @@ class IntentDispatchTest {
             // Detect completion based on button being re-enabled
             var isEnabled = false
             activityRule.scenario.onActivity { activity ->
-                isEnabled = activity.findViewById<Button>(R.id.runCommandButton).isEnabled
+                isEnabled = activity.findViewById<android.view.View>(R.id.runCommandButton).isEnabled
             }
             if (isEnabled) {
                 // If the button is re-enabled but we didn't receive an intent, 

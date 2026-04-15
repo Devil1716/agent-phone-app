@@ -8,29 +8,21 @@ import androidx.recyclerview.widget.RecyclerView
 import com.gemma.agentphone.agent.StepStatus
 import com.gemma.agentphone.agent.TraceEntry
 
-/**
- * RecyclerView adapter that powers the Chain of Thought (CoT) mini-window.
- * Each item represents one step in the agent's execution trace,
- * rendered in real time as the agent "thinks" and "acts".
- */
 class CotStepAdapter : RecyclerView.Adapter<CotStepAdapter.StepViewHolder>() {
 
     private val steps = mutableListOf<TraceEntry>()
 
-    /** Append a new step and animate its insertion. */
     fun addStep(entry: TraceEntry) {
         steps.add(entry)
         notifyItemInserted(steps.size - 1)
     }
 
-    /** Replace all steps at once (e.g. when showing a completed trace). */
     fun submitAll(entries: List<TraceEntry>) {
         steps.clear()
         steps.addAll(entries)
         notifyDataSetChanged()
     }
 
-    /** Clear all steps for a new execution. */
     fun clear() {
         val count = steps.size
         steps.clear()
@@ -73,22 +65,24 @@ class CotStepAdapter : RecyclerView.Adapter<CotStepAdapter.StepViewHolder>() {
 
             detail.text = entry.detail
 
-            // Status badge styling
             when (entry.status) {
                 StepStatus.SUCCESS -> {
-                    statusBadge.text = "✓ OK"
+                    statusBadge.text = "OK"
                     statusBadge.setTextColor(itemView.context.getColor(R.color.traceSuccess))
                 }
+
                 StepStatus.PENDING_CONFIRMATION -> {
-                    statusBadge.text = "⏳ WAIT"
+                    statusBadge.text = "WAIT"
                     statusBadge.setTextColor(itemView.context.getColor(R.color.tracePending))
                 }
+
                 StepStatus.BLOCKED -> {
-                    statusBadge.text = "✗ BLOCKED"
+                    statusBadge.text = "BLOCKED"
                     statusBadge.setTextColor(itemView.context.getColor(R.color.traceBlocked))
                 }
+
                 StepStatus.SKIPPED -> {
-                    statusBadge.text = "— SKIP"
+                    statusBadge.text = "SKIP"
                     statusBadge.setTextColor(itemView.context.getColor(R.color.traceSkipped))
                 }
             }

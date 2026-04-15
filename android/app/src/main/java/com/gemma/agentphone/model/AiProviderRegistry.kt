@@ -6,7 +6,7 @@ class AiProviderRegistry {
             AiProviderDescriptor(
                 id = "gemma-local",
                 displayName = "Gemma Local",
-                models = listOf("gemma-3-1b-it-int4", "gemma-2b-instruct", "gemma-7b-instruct"),
+                models = listOf("gemma-4-e2b-it", "gemma-3-1b-it-int4"),
                 supportsOffline = true
             )
         ),
@@ -38,7 +38,7 @@ class AiProviderRegistry {
             AiProviderDescriptor(
                 id = "relay-gemma",
                 displayName = "Relay Gemma",
-                models = listOf("gemma-4-9b-instruct", "gemma-9b-instruct"),
+                models = listOf("gemma-4-9b-instruct", "gemma-4-e2b-it"),
                 supportsOffline = false
             ),
             baseUrl = "http://192.168.1.2:8080"
@@ -70,7 +70,7 @@ private class StaticAiProvider(
     override fun infer(request: AiRequest): AiResponse {
         return AiResponse(
             providerId = descriptor.id,
-            model = descriptor.models.first(),
+            model = descriptor.models.firstOrNull().orEmpty(),
             summary = "Handled ${request.targetCategory} in ${request.mode} mode.",
             latencyMs = if (descriptor.supportsOffline) 120 else 420
         )

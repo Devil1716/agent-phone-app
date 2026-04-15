@@ -14,8 +14,9 @@ class AutonomousActionParserTest {
         )
 
         assertThat(action).isNotNull()
-        assertThat(action!!.spec.data).contains("market://search")
-        assertThat(action.spec.data).contains("Spotify")
+        assertThat(action!!.externalAction).isNotNull()
+        assertThat(action.externalAction!!.spec.data).contains("market://search")
+        assertThat(action.externalAction!!.spec.data).contains("Spotify")
     }
 
     @Test
@@ -26,7 +27,25 @@ class AutonomousActionParserTest {
         )
 
         assertThat(action).isNotNull()
-        assertThat(action!!.spec.packageName).isEqualTo("com.whatsapp")
-        assertThat(action.spec.data).contains("wa.me")
+        assertThat(action!!.externalAction).isNotNull()
+        assertThat(action.externalAction!!.spec.packageName).isEqualTo("com.whatsapp")
+        assertThat(action.externalAction!!.spec.data).contains("wa.me")
+    }
+
+    @Test
+    fun tapTextResponseBuildsAccessibilityCommand() {
+        val action = parser.parse(
+            command = "open the first result",
+            responseSummary = """
+                THOUGHT: The target button is already visible.
+                ACTION: TAP_TEXT
+                TARGET: Install
+            """.trimIndent()
+        )
+
+        assertThat(action).isNotNull()
+        assertThat(action!!.action).isEqualTo(AutonomousActionType.TAP_TEXT)
+        assertThat(action.accessibilityCommand).isNotNull()
+        assertThat(action.accessibilityCommand!!.targetText).isEqualTo("Install")
     }
 }

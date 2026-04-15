@@ -14,6 +14,7 @@ data class TaskStep(
     val description: String,
     val targetApp: String? = null,
     val payload: String? = null,
+    val contextHint: String? = null,
     val riskLevel: RiskLevel = RiskLevel.LOW
 )
 

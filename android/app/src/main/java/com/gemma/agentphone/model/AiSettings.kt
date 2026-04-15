@@ -16,7 +16,7 @@ data class AiSettings(
         fun defaultGemma(): AiSettings {
             return AiSettings(
                 activeProvider = "gemma-local",
-                activeModel = "gemma-3-1b-it-int4",
+                activeModel = "gemma-4-e2b-it",
                 fallbackProvider = "relay-gemma",
                 fallbackModel = "gemma-4-9b-instruct",
                 customPrompt = "",

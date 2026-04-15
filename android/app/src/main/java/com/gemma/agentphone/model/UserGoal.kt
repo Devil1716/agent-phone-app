@@ -5,7 +5,9 @@ data class UserGoal(
     val category: GoalCategory,
     val targetApp: String? = null,
     val targetValue: String? = null,
-    val requiresFastPath: Boolean = true
+    val requiresFastPath: Boolean = true,
+    val understanding: String? = null,
+    val shouldOpenAppFirst: Boolean = false
 )
 
 enum class GoalCategory {

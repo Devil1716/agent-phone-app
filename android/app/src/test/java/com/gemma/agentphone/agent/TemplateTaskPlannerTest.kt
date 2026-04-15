@@ -23,11 +23,20 @@ class TemplateTaskPlannerTest {
     @Test
     fun generalAppControlUsesSlowPath() {
         val plan = planner.plan(
-            UserGoal("open Spotify", GoalCategory.GENERAL_APP_CONTROL, targetApp = "Spotify", requiresFastPath = false),
+            UserGoal(
+                "open Spotify",
+                GoalCategory.GENERAL_APP_CONTROL,
+                targetApp = "Spotify",
+                requiresFastPath = false,
+                understanding = "Open Spotify and continue the requested flow there.",
+                shouldOpenAppFirst = true
+            ),
             observation
         )
 
         assertThat(plan.strategy).isEqualTo(ExecutionStrategy.SLOW_PATH)
-        assertThat(plan.steps.first().type).isEqualTo(StepType.EXECUTE_AUTONOMOUSLY)
+        assertThat(plan.steps.first().type).isEqualTo(StepType.OPEN_APP)
+        assertThat(plan.steps.last().type).isEqualTo(StepType.EXECUTE_AUTONOMOUSLY)
+        assertThat(plan.steps.last().contextHint).contains("Spotify")
     }
 }

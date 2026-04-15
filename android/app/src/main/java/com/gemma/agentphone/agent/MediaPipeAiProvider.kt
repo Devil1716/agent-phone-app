@@ -17,6 +17,8 @@ class MediaPipeAiProvider(
 
     private var llmInference: LlmInference? = null
     private var isInitializing = false
+    @Volatile
+    private var initializationError: String? = null
 
     private fun ensureInitialized(): LlmInference? {
         if (llmInference == null && !isInitializing && modelFile.exists()) {
@@ -30,8 +32,9 @@ class MediaPipeAiProvider(
                             .setMaxTopK(40)
                             .build()
                         llmInference = LlmInference.createFromOptions(context, options)
+                        initializationError = null
                     } catch (exception: Exception) {
-                        exception.printStackTrace()
+                        initializationError = exception.localizedMessage ?: "The local Gemma runtime could not initialize."
                     } finally {
                         isInitializing = false
                     }
@@ -49,15 +52,16 @@ class MediaPipeAiProvider(
             val response = engine.generateResponse(request.prompt)
             AiResponse(
                 providerId = descriptor.id,
-                model = descriptor.models.first(),
+                model = descriptor.models.firstOrNull().orEmpty(),
                 summary = response ?: "The local Gemma model did not return a response.",
                 latencyMs = System.currentTimeMillis() - startTime
             )
         } else {
             AiResponse(
                 providerId = descriptor.id,
-                model = descriptor.models.first(),
-                summary = "The local Gemma runtime is not ready yet. Download or import the model first.",
+                model = descriptor.models.firstOrNull().orEmpty(),
+                summary = initializationError
+                    ?: "The local Gemma runtime is not ready yet. Download or import the model first.",
                 latencyMs = System.currentTimeMillis() - startTime
             )
         }

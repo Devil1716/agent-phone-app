@@ -39,25 +39,42 @@ class AccessibilityExecutor(
                             autonomyMode = autonomyMode
                         ).compose(
                             command = step.payload.orEmpty(),
-                            observation = observation
+                            observation = observation,
+                            understanding = step.contextHint
                         ),
                         mode = "autonomous",
                         targetCategory = GoalCategory.GENERAL_APP_CONTROL
                     )
 
                     val response = aiProvider.infer(request)
-                    externalAction = actionParser.parse(
+                    val parsedAction = actionParser.parse(
                         command = step.payload.orEmpty(),
                         responseSummary = response.summary
-                    ) ?: AgentAccessibilityService.dispatchAutonomousAction(response.summary)
+                    )
+                    val thought = parsedAction?.thought
+                    externalAction = parsedAction?.externalAction
+                    val accessibilityResult = parsedAction?.accessibilityCommand?.let(AgentAccessibilityService::executeCommand)
 
-                    val thought = externalAction?.thought
+                    val status = when {
+                        parsedAction == null -> StepStatus.SKIPPED
+                        accessibilityResult != null && !accessibilityResult.success -> StepStatus.SKIPPED
+                        else -> StepStatus.SUCCESS
+                    }
+                    val actionLabel = parsedAction?.action?.name ?: "UNPARSEABLE"
+                    val detail = when {
+                        parsedAction == null -> "The model response was not actionable. Expected a structured ACTION block."
+                        accessibilityResult != null -> accessibilityResult.message
+                        parsedAction.action == AutonomousActionType.DONE -> "ACTION: DONE"
+                        parsedAction.action == AutonomousActionType.WAIT -> "ACTION: WAIT"
+                        else -> "ACTION: $actionLabel"
+                    }
+
                     return StepResult(
                         stepId = step.id,
-                        status = StepStatus.SUCCESS,
-                        message = "Local Gemma suggested the next app-control step: ${response.summary} (Latency: ${response.latencyMs}ms)",
+                        status = status,
+                        message = detail,
                         executorName = "AccessibilityExecutor",
-                        thought = thought,
+                        thought = thought ?: response.summary.lineSequence().firstOrNull()?.trim(),
                         externalAction = externalAction
                     )
                 }

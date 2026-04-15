@@ -16,7 +16,10 @@ class PromptAwareGoalInterpreter(
         }
 
         return when {
-            shouldPreferWhatsApp(interpreted, input) -> interpreted.copy(targetApp = "whatsapp")
+            shouldPreferWhatsApp(interpreted, input) -> interpreted.copy(
+                targetApp = "whatsapp",
+                understanding = "Use WhatsApp for this message based on the custom operating prompt."
+            )
             else -> interpreted
         }
     }

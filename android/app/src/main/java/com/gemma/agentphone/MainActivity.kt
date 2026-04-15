@@ -2,7 +2,6 @@ package com.gemma.agentphone
 
 import android.app.Activity
 import android.content.Intent
-
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -16,19 +15,16 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.gemma.agentphone.agent.AgentRuntimeFactory
-
 import com.gemma.agentphone.agent.ExecutionTrace
 import com.gemma.agentphone.agent.ModelDownloadManager
 import com.gemma.agentphone.agent.ModelDownloadStatus
 import com.gemma.agentphone.agent.StepStatus
 import com.gemma.agentphone.agent.TraceEntry
-
 import com.gemma.agentphone.model.AiProviderRegistry
 import com.gemma.agentphone.model.AiSettingsRepository
 import com.gemma.agentphone.model.ExecutionHistoryEntry
 import com.gemma.agentphone.model.ExecutionHistoryRepository
 import com.gemma.agentphone.model.SharedPreferencesKeyValueStore
-
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -108,8 +104,6 @@ class MainActivity : AppCompatActivity() {
         statusText = findViewById(R.id.statusText)
         commandInput = findViewById(R.id.commandInput)
         cotStepCount = findViewById(R.id.cotStepCount)
-
-        // Set up the Chain of Thought RecyclerView (the mini-window)
         cotRecycler = findViewById(R.id.cotRecycler)
         cotAdapter = CotStepAdapter()
         cotRecycler.layoutManager = LinearLayoutManager(this)
@@ -150,7 +144,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun runCommand() {
         val command = commandInput.text.toString()
-        if (command.isBlank()) return
+        if (command.isBlank()) {
+            return
+        }
 
         val runCommandButton = findViewById<android.view.View>(R.id.runCommandButton)
         val thinkingOverlay = findViewById<android.view.View>(R.id.thinkingOverlay)
@@ -162,8 +158,6 @@ class MainActivity : AppCompatActivity() {
         thinkingOverlay.visibility = android.view.View.VISIBLE
         liveThoughtText.text = "Analyzing request..."
         liveActionText.text = ""
-
-        // Clear previous CoT steps and hide empty state
         cotAdapter.clear()
         cotEmptyState.visibility = android.view.View.GONE
         cotRecycler.visibility = android.view.View.VISIBLE
@@ -172,17 +166,16 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch(Dispatchers.Default) {
             try {
                 val settings = AiSettingsRepository(this@MainActivity).load()
-                val trace = runtimeFactory.createCoordinator(this@MainActivity, settings, providerRegistry).run(command) { progress ->
-                    runOnUiThread {
-                        liveThoughtText.text = progress.thought ?: progress.description
-                        liveActionText.text = "ACTION: ${progress.executorName}"
-
-                        // Add the step to the CoT mini-window in real time
-                        cotAdapter.addStep(progress)
-                        cotStepCount.text = "${cotAdapter.stepCount()} steps"
-                        cotRecycler.smoothScrollToPosition(cotAdapter.stepCount() - 1)
+                val trace = runtimeFactory.createCoordinator(this@MainActivity, settings, providerRegistry)
+                    .run(command) { progress ->
+                        runOnUiThread {
+                            liveThoughtText.text = progress.thought ?: progress.description
+                            liveActionText.text = progress.detail
+                            cotAdapter.addStep(progress)
+                            cotStepCount.text = "${cotAdapter.stepCount()} steps"
+                            cotRecycler.smoothScrollToPosition(cotAdapter.stepCount() - 1)
+                        }
                     }
-                }
 
                 withContext(Dispatchers.Main) {
                     historyRepository.add(
@@ -196,7 +189,6 @@ class MainActivity : AppCompatActivity() {
                         )
                     )
 
-                    // Show the final trace in the CoT panel
                     if (cotAdapter.stepCount() == 0) {
                         cotAdapter.submitAll(trace.entries)
                         cotStepCount.text = "${trace.entries.size} steps"
@@ -214,17 +206,16 @@ class MainActivity : AppCompatActivity() {
             } catch (exception: Exception) {
                 withContext(Dispatchers.Main) {
                     thinkingOverlay.visibility = android.view.View.GONE
-
-                    // Show the error as a "step" in the CoT panel
-                    val errorEntry = TraceEntry(
-                        stepId = "error",
-                        description = "Agent execution failed",
-                        status = StepStatus.BLOCKED,
-                        executorName = "Runtime",
-                        thought = exception.localizedMessage ?: "Unknown error",
-                        detail = "Check that the local model is ready or that your fallback provider is configured."
+                    cotAdapter.addStep(
+                        TraceEntry(
+                            stepId = "error",
+                            description = "Agent execution failed",
+                            status = StepStatus.BLOCKED,
+                            executorName = "Runtime",
+                            thought = exception.localizedMessage ?: "Unknown error",
+                            detail = "Check that the local model is ready or that your fallback provider is configured."
+                        )
                     )
-                    cotAdapter.addStep(errorEntry)
                     cotStepCount.text = "${cotAdapter.stepCount()} steps"
                     runCommandButton.isEnabled = true
                 }
@@ -256,31 +247,41 @@ class MainActivity : AppCompatActivity() {
 
         return when (val status = modelDownloadManager.getStatus()) {
             is ModelDownloadStatus.Ready -> {
-                modelStatusTextView.text = "Gemma 4 · Ready"
+                modelStatusTextView.text = "Gemma 4 - Ready"
                 modelStatusTextView.setOnClickListener(null)
+                modelStatusTextView.setOnLongClickListener(null)
                 false
             }
 
             is ModelDownloadStatus.Downloading -> {
-                modelStatusTextView.text = "Downloading · ${status.progress}%"
+                modelStatusTextView.text = "Downloading - ${status.progress}%"
                 modelStatusTextView.setOnClickListener(null)
+                modelStatusTextView.setOnLongClickListener(null)
                 modelStatusHandler.removeCallbacks(modelStatusRunnable)
                 modelStatusHandler.postDelayed(modelStatusRunnable, 1_000)
                 true
             }
 
             is ModelDownloadStatus.Failed -> {
-                modelStatusTextView.text = "Model · Error (Tap)"
+                modelStatusTextView.text = "Model - Error (Tap)"
                 modelStatusTextView.setOnClickListener {
                     Toast.makeText(this@MainActivity, status.message, Toast.LENGTH_LONG).show()
+                }
+                modelStatusTextView.setOnLongClickListener {
+                    importModelLauncher.launch(arrayOf("*/*"))
+                    true
                 }
                 false
             }
 
             ModelDownloadStatus.Missing -> {
-                modelStatusTextView.text = "Model · Tap to Download"
+                modelStatusTextView.text = "Model - Tap to Download"
                 modelStatusTextView.setOnClickListener {
                     startModelDownload()
+                }
+                modelStatusTextView.setOnLongClickListener {
+                    importModelLauncher.launch(arrayOf("*/*"))
+                    true
                 }
                 false
             }
@@ -294,23 +295,27 @@ class MainActivity : AppCompatActivity() {
             stepReason = pendingEntry?.detail ?: ""
         )
         dialog.onConfirm = {
-            cotAdapter.addStep(TraceEntry(
-                stepId = "confirmed",
-                description = "User approved the pending action",
-                status = StepStatus.SUCCESS,
-                executorName = "User",
-                detail = "Confirmed"
-            ))
+            cotAdapter.addStep(
+                TraceEntry(
+                    stepId = "confirmed",
+                    description = "User approved the pending action",
+                    status = StepStatus.SUCCESS,
+                    executorName = "User",
+                    detail = "Confirmed"
+                )
+            )
             trace.externalActions.forEach { externalActionLauncher.launch(this, it.spec) }
         }
         dialog.onCancel = {
-            cotAdapter.addStep(TraceEntry(
-                stepId = "canceled",
-                description = "User canceled execution",
-                status = StepStatus.SKIPPED,
-                executorName = "User",
-                detail = "Canceled"
-            ))
+            cotAdapter.addStep(
+                TraceEntry(
+                    stepId = "canceled",
+                    description = "User canceled execution",
+                    status = StepStatus.SKIPPED,
+                    executorName = "User",
+                    detail = "Canceled"
+                )
+            )
         }
         dialog.show(supportFragmentManager, ConfirmationDialogFragment.TAG)
     }
