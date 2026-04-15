@@ -19,6 +19,7 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
+import java.util.zip.ZipFile
 import kotlin.math.max
 
 data class ModelDownloadState(
@@ -88,7 +89,7 @@ class GemmaModelManager(
                         progressPercent = 100,
                         message = "Verifying Gemma 4"
                     )
-                    if (verifyAndMark(finalFile)) {
+                    if (verifyAndMark(finalFile, expectedChecksumFor(downloadUrl))) {
                         _downloadState.value = readyState("Gemma 4 model is ready.")
                         return@withContext
                     }
@@ -126,8 +127,25 @@ class GemmaModelManager(
                         output.fd.sync()
                     }
                 }
-                verifyOrThrow(finalFile)
+                verifyOrThrow(finalFile, expectedChecksum = null)
                 _downloadState.value = readyState("Gemma 4 model imported successfully.")
+            }
+        }
+    }
+
+    suspend fun invalidateModel(reason: String) {
+        downloadMutex.withLock {
+            withContext(Dispatchers.IO) {
+                AppLogger.w(context, TAG, "Invalidating saved Gemma model. Reason: $reason")
+                clearVerificationMarker()
+                partialFile.delete()
+                finalFile.delete()
+                _downloadState.value = ModelDownloadState(
+                    isReady = false,
+                    isDownloading = false,
+                    isVerifying = false,
+                    message = reason
+                )
             }
         }
     }
@@ -249,37 +267,75 @@ class GemmaModelManager(
             totalBytes = finalFile.length(),
             message = "Verifying Gemma 4"
         )
-        verifyOrThrow(finalFile)
+        verifyOrThrow(finalFile, expectedChecksum = expectedChecksumFor(BuildConfig.GEMMA4_MODEL_URL))
         partialFile.delete()
         _downloadState.value = readyState("Gemma 4 model ready.")
     }
 
-    private fun verifyOrThrow(file: File) {
-        if (!verifyAndMark(file)) {
+    private fun verifyOrThrow(file: File, expectedChecksum: String?) {
+        val validBundle = looksLikeTaskBundle(file)
+        val validChecksum = verifyChecksum(file, expectedChecksum)
+        if (!(validBundle && validChecksum)) {
             clearVerificationMarker()
             partialFile.delete()
             file.delete()
-            throw IllegalStateException("Gemma 4 checksum verification failed.")
+            throw IllegalStateException(
+                if (!validBundle) {
+                    "The selected model is not a valid MediaPipe Gemma task bundle."
+                } else {
+                    "Gemma model verification failed."
+                }
+            )
         }
+        verificationFile.writeText(computeChecksum(file))
     }
 
-    private fun verifyAndMark(file: File): Boolean {
-        val matches = verifyChecksum(file)
+    private fun verifyAndMark(file: File, expectedChecksum: String?): Boolean {
+        val matches = verifyChecksum(file, expectedChecksum) && looksLikeTaskBundle(file)
         if (matches) {
-            verificationFile.writeText(expectedChecksum())
+            verificationFile.writeText(computeChecksum(file))
             return true
         }
         return false
     }
 
-    private fun verifyChecksum(file: File): Boolean {
+    private fun verifyChecksum(file: File, expectedChecksum: String?): Boolean {
         if (!file.exists()) {
             return false
         }
-        val expected = expectedChecksum()
+        val expected = expectedChecksum?.trim()?.lowercase().orEmpty()
         if (expected.isBlank()) {
             return true
         }
+        return computeChecksum(file) == expected
+    }
+
+    private fun hasVerifiedModel(): Boolean {
+        if (!finalFile.exists() || !verificationFile.exists()) {
+            return false
+        }
+        val marker = verificationFile.readText().trim().lowercase()
+        return marker.isNotBlank() &&
+            marker == computeChecksum(finalFile) &&
+            looksLikeTaskBundle(finalFile)
+    }
+
+    private fun expectedChecksum(): String = expectedSha256.trim().lowercase()
+
+    private fun expectedChecksumFor(downloadUrl: String): String? {
+        val normalized = downloadUrl.trim()
+        val defaultUrls = setOf(
+            BuildConfig.GEMMA4_MODEL_URL,
+            BuildConfig.DEFAULT_MODEL_DOWNLOAD_URL
+        )
+        return if (normalized in defaultUrls && expectedChecksum().isNotBlank()) {
+            expectedChecksum()
+        } else {
+            null
+        }
+    }
+
+    private fun computeChecksum(file: File): String {
         val digest = MessageDigest.getInstance("SHA-256")
         file.inputStream().use { input ->
             val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
@@ -291,19 +347,22 @@ class GemmaModelManager(
                 digest.update(buffer, 0, read)
             }
         }
-        val actual = digest.digest().joinToString("") { "%02x".format(it) }
-        return actual == expected
+        return digest.digest().joinToString("") { "%02x".format(it) }
     }
 
-    private fun hasVerifiedModel(): Boolean {
-        if (!finalFile.exists() || !verificationFile.exists()) {
+    private fun looksLikeTaskBundle(file: File): Boolean {
+        if (!file.exists() || file.length() <= 0L) {
             return false
         }
-        val marker = verificationFile.readText().trim().lowercase()
-        return marker.isNotBlank() && marker == expectedChecksum()
+        return runCatching {
+            ZipFile(file).use { zip ->
+                val entryNames = zip.entries().asSequence().map { it.name }.toList()
+                entryNames.isNotEmpty() &&
+                    entryNames.any { it.equals("TOKENIZER_MODEL", ignoreCase = true) } &&
+                    entryNames.any { it.startsWith("TF_LITE", ignoreCase = true) }
+            }
+        }.getOrElse { false }
     }
-
-    private fun expectedChecksum(): String = expectedSha256.trim().lowercase()
 
     private fun clearVerificationMarker() {
         if (verificationFile.exists()) {

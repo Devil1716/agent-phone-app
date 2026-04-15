@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.1] - 2026-04-15
+
+### Fixed
+- **Corrupt Gemma bundle recovery** - The app now validates saved and imported MediaPipe task bundles before runtime use, invalidates broken local model files, and replaces the native `Unable to open zip archive` failure with a clear recovery message.
+- **Verification marker integrity** - Saved model verification now stores the real file checksum and rechecks the archive structure on startup so stale `.verified` markers cannot mask a damaged bundle.
+- **Glass dashboard readability** - Rebalanced the Compose glassmorphism theme with stronger card contrast, clearer log surfaces, and more legible text on-device.
+
+### Verified
+- `./gradlew.bat testDebugUnitTest --console=plain`
+- `./gradlew.bat connectedDebugAndroidTest --console=plain`
+- `./gradlew.bat :app:installDebug --console=plain`
+- Live emulator QA with a deliberately corrupted `.task` bundle seeded into app storage to confirm the friendly recovery state.
+
 ## [0.6.0] - 2026-04-15
 
 ### Added

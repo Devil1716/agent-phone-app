@@ -22,6 +22,8 @@ class GemmaInferenceEngine(
 ) : TextGenerationEngine {
     companion object {
         private const val TAG = "GemmaInferenceEngine"
+        private const val INVALID_MODEL_MESSAGE =
+            "The saved Gemma model bundle is invalid. Import or download a valid MediaPipe task file and try again."
     }
 
     private val inferenceMutex = Mutex()
@@ -62,6 +64,10 @@ class GemmaInferenceEngine(
                     "Gemma inference attempt ${attempt + 1} failed. Resetting the runtime.",
                     throwable
                 )
+                if (throwable.isCorruptModelError()) {
+                    modelManager.invalidateModel(INVALID_MODEL_MESSAGE)
+                    throw IllegalStateException(INVALID_MODEL_MESSAGE, throwable)
+                }
                 reset()
                 runCatching { System.gc() }
             }
@@ -103,6 +109,10 @@ class GemmaInferenceEngine(
                 } catch (throwable: Throwable) {
                     lastFailure = throwable
                     AppLogger.w(context, TAG, "Gemma backend $backend failed to initialize.", throwable)
+                    if (throwable.isCorruptModelError()) {
+                        modelManager.invalidateModel(INVALID_MODEL_MESSAGE)
+                        throw IllegalStateException(INVALID_MODEL_MESSAGE, throwable)
+                    }
                 }
             }
 
@@ -151,5 +161,16 @@ class GemmaInferenceEngine(
                 cancel(true)
             }
         }
+    }
+
+    private fun Throwable.isCorruptModelError(): Boolean {
+        return generateSequence(this) { it.cause }
+            .mapNotNull { it.localizedMessage }
+            .any { message ->
+                message.contains("Unable to open zip archive", ignoreCase = true) ||
+                    message.contains("zip archive", ignoreCase = true) ||
+                    message.contains("model asset bundle", ignoreCase = true) ||
+                    message.contains("task bundle", ignoreCase = true)
+            }
     }
 }

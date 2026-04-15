@@ -217,6 +217,12 @@ The release was validated with three gates:
 
 Instrumentation now verifies the updated activity and intent-dispatch behavior on an Android emulator instead of relying on the older XML view hierarchy.
 
+### 9.1 Corrupt Model Recovery Validation
+
+The runtime was additionally tested against a deliberately broken MediaPipe task bundle copied into app storage. This reproduces the class of failure that previously surfaced as a native `Unable to open zip archive` initialization error. After the 0.6.1 fix, the runtime invalidates the saved model, returns control to the dashboard, and presents a plain-language recovery message that instructs the operator to re-import or re-download a valid bundle.
+
+![Atlas corrupt bundle recovery](research-invalid-model.png)
+
 ## 10. Limitations
 
 Despite the improvements, the system still has meaningful constraints:

@@ -8,8 +8,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -65,6 +65,17 @@ import com.gemma.agentphone.agent.AgentStatus
 import com.gemma.agentphone.model.ModelDownloadState
 import kotlin.math.roundToInt
 
+private val AtlasInk = Color(0xFF14212B)
+private val AtlasTeal = Color(0xFF0D5C63)
+private val AtlasAmber = Color(0xFFEE8D63)
+private val AtlasMist = Color(0xFFF6F1E7)
+private val AtlasSky = Color(0xFFD8ECEF)
+private val AtlasCard = Color(0xD9FCFCF7)
+private val AtlasCardBorder = Color(0x80FFFFFF)
+private val AtlasMuted = Color(0xFF4F5F6C)
+private val AtlasLogSurface = Color(0xCCFFFFFF)
+private val AtlasTint = Color(0x1A0D5C63)
+
 @Composable
 fun AtlasDashboardApp(
     command: String,
@@ -83,13 +94,13 @@ fun AtlasDashboardApp(
     onOpenAccessibilitySettings: () -> Unit
 ) {
     val colors = lightColorScheme(
-        primary = Color(0xFF0D5C63),
-        secondary = Color(0xFFF08A5D),
+        primary = AtlasTeal,
+        secondary = AtlasAmber,
         tertiary = Color(0xFFF9ED69),
-        background = Color(0xFFF4EFE6),
-        surface = Color(0xCCFFFFFF),
-        onSurface = Color(0xFF151515),
-        onBackground = Color(0xFF151515)
+        background = AtlasMist,
+        surface = AtlasCard,
+        onSurface = AtlasInk,
+        onBackground = AtlasInk
     )
 
     MaterialTheme(colorScheme = colors) {
@@ -106,9 +117,9 @@ fun AtlasDashboardApp(
                 .background(
                     Brush.linearGradient(
                         colors = listOf(
-                            Color(0xFFF4EFE6),
-                            Color(0xFFE4F2F0),
-                            Color(0xFFFDF6E3)
+                            AtlasMist,
+                            AtlasSky,
+                            Color(0xFFF4E5D5)
                         )
                     )
                 )
@@ -168,12 +179,12 @@ fun AtlasDashboardApp(
 private fun BoxScope.BackgroundOrbs() {
     Box(
         modifier = Modifier
-            .size(240.dp)
-            .scale(1.25f)
+            .size(260.dp)
+            .scale(1.15f)
             .blur(110.dp)
             .background(
                 brush = Brush.radialGradient(
-                    colors = listOf(Color(0x66F08A5D), Color.Transparent)
+                    colors = listOf(Color(0x55EE8D63), Color.Transparent)
                 ),
                 shape = CircleShape
             )
@@ -181,11 +192,11 @@ private fun BoxScope.BackgroundOrbs() {
     )
     Box(
         modifier = Modifier
-            .size(280.dp)
+            .size(320.dp)
             .blur(120.dp)
             .background(
                 brush = Brush.radialGradient(
-                    colors = listOf(Color(0x6633B5E5), Color.Transparent)
+                    colors = listOf(Color(0x553AA6C7), Color.Transparent)
                 ),
                 shape = CircleShape
             )
@@ -207,7 +218,10 @@ private fun HeroCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top
             ) {
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
                     Text(
                         text = "Atlas Agent",
                         style = MaterialTheme.typography.headlineMedium,
@@ -216,7 +230,7 @@ private fun HeroCard(
                     Text(
                         text = "A local Gemma-powered Android operator that reads the accessibility tree, plans one safe action at a time, and verifies each UI transition.",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f)
+                        color = AtlasMuted
                     )
                 }
 
@@ -225,7 +239,7 @@ private fun HeroCard(
                         onClick = onOpenHistory,
                         modifier = Modifier
                             .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.32f))
+                            .background(AtlasTint)
                             .testTag("openHistoryButton")
                     ) {
                         Icon(Icons.Rounded.History, contentDescription = "History")
@@ -234,7 +248,7 @@ private fun HeroCard(
                         onClick = onOpenSettings,
                         modifier = Modifier
                             .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.32f))
+                            .background(AtlasTint)
                             .testTag("openSettingsButton")
                     ) {
                         Icon(Icons.Rounded.Settings, contentDescription = "Settings")
@@ -250,7 +264,7 @@ private fun HeroCard(
                 style = MaterialTheme.typography.bodyMedium,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.76f)
+                color = AtlasMuted
             )
         }
     }
@@ -275,7 +289,7 @@ private fun AccessibilityWarningCard(
                     modifier = Modifier
                         .size(44.dp)
                         .clip(CircleShape)
-                        .background(Color(0x33F08A5D)),
+                        .background(Color(0x33EE8D63)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(Icons.Rounded.Accessibility, contentDescription = null)
@@ -285,7 +299,7 @@ private fun AccessibilityWarningCard(
                     Text(
                         "Enable the service so Atlas can read the live UI tree and dispatch taps, swipes, and text input.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f)
+                        color = AtlasMuted
                     )
                 }
             }
@@ -312,7 +326,7 @@ private fun CommandCard(
             Text(
                 "Describe the goal in plain language. Atlas will perceive, plan, execute, and reflect in a strict loop.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f)
+                color = AtlasMuted
             )
 
             OutlinedTextField(
@@ -327,10 +341,14 @@ private fun CommandCard(
                 placeholder = { Text("Book a cab to the airport, open Wi-Fi settings, or search the web for Gemma.") },
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color.White.copy(alpha = 0.42f),
-                    unfocusedContainerColor = Color.White.copy(alpha = 0.22f),
-                    focusedBorderColor = Color.White.copy(alpha = 0.62f),
-                    unfocusedBorderColor = Color.White.copy(alpha = 0.35f)
+                    focusedContainerColor = Color.White.copy(alpha = 0.72f),
+                    unfocusedContainerColor = Color.White.copy(alpha = 0.5f),
+                    focusedBorderColor = AtlasTeal.copy(alpha = 0.55f),
+                    unfocusedBorderColor = Color.White.copy(alpha = 0.7f),
+                    focusedTextColor = AtlasInk,
+                    unfocusedTextColor = AtlasInk,
+                    focusedLabelColor = AtlasTeal,
+                    cursorColor = AtlasTeal
                 ),
                 shape = RoundedCornerShape(22.dp)
             )
@@ -348,8 +366,8 @@ private fun CommandCard(
                         .height(54.dp)
                         .testTag("runCommandButton"),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF0D5C63),
-                        disabledContainerColor = Color(0x660D5C63)
+                        containerColor = AtlasTeal,
+                        disabledContainerColor = AtlasTeal.copy(alpha = 0.4f)
                     )
                 ) {
                     Icon(Icons.Rounded.PlayArrow, contentDescription = null)
@@ -365,8 +383,8 @@ private fun CommandCard(
                         .height(54.dp)
                         .testTag("stopAgentButton"),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFF08A5D),
-                        disabledContainerColor = Color(0x55F08A5D)
+                        containerColor = AtlasAmber,
+                        disabledContainerColor = AtlasAmber.copy(alpha = 0.35f)
                     )
                 ) {
                     Icon(Icons.Rounded.Stop, contentDescription = null)
@@ -379,7 +397,7 @@ private fun CommandCard(
                     modifier = Modifier
                         .size(54.dp)
                         .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.3f))
+                        .background(AtlasTint)
                         .testTag("voiceInputButton")
                 ) {
                     Icon(Icons.Rounded.Mic, contentDescription = "Voice input")
@@ -412,9 +430,11 @@ private fun ModelCard(
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("On-device Gemma runtime", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Text(
-                        downloadState.message.ifBlank { "Import or download a compatible MediaPipe Gemma task bundle to enable local execution." },
+                        downloadState.message.ifBlank {
+                            "Import or download a compatible MediaPipe Gemma task bundle to enable local execution."
+                        },
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f)
+                        color = AtlasMuted
                     )
                 }
 
@@ -429,14 +449,14 @@ private fun ModelCard(
                     .fillMaxWidth()
                     .height(10.dp)
                     .clip(RoundedCornerShape(999.dp)),
-                color = Color(0xFF0D5C63),
-                trackColor = Color.White.copy(alpha = 0.26f)
+                color = AtlasTeal,
+                trackColor = Color.White.copy(alpha = 0.5f)
             )
 
             Text(
-                text = "${(normalizedProgress * 100).roundToInt()}% • ${(downloadState.downloadedBytes / 1024f / 1024f).roundToInt()} MB / ${(downloadState.totalBytes / 1024f / 1024f).roundToInt()} MB",
+                text = "${(normalizedProgress * 100).roundToInt()}% | ${(downloadState.downloadedBytes / 1024f / 1024f).roundToInt()} MB / ${(downloadState.totalBytes / 1024f / 1024f).roundToInt()} MB",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.66f)
+                color = AtlasMuted
             )
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -455,7 +475,10 @@ private fun ModelCard(
                     modifier = Modifier
                         .weight(1f)
                         .testTag("importModelButton"),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.28f))
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.White.copy(alpha = 0.58f),
+                        contentColor = AtlasInk
+                    )
                 ) {
                     Icon(Icons.Rounded.Upload, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
@@ -478,10 +501,10 @@ private fun LogCard(
                 latestTrace,
                 modifier = Modifier.testTag("statusText"),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f)
+                color = AtlasMuted
             )
 
-            HorizontalDivider(color = Color.White.copy(alpha = 0.3f))
+            HorizontalDivider(color = Color.White.copy(alpha = 0.5f))
 
             LazyColumn(
                 modifier = Modifier
@@ -493,7 +516,7 @@ private fun LogCard(
                     item {
                         Text(
                             text = "Perception, planning, execution, and reflection logs will stream here once the agent starts moving.",
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.66f)
+                            color = AtlasMuted
                         )
                     }
                 } else {
@@ -509,16 +532,16 @@ private fun LogCard(
 @Composable
 private fun LogRow(index: Int, entry: AgentLogEntry) {
     val accent = when (entry.success) {
-        true -> Color(0xFF0D5C63)
+        true -> AtlasTeal
         false -> Color(0xFFD1495B)
-        null -> Color.White.copy(alpha = 0.35f)
+        null -> AtlasMuted.copy(alpha = 0.4f)
     }
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
-            .background(Color.White.copy(alpha = 0.24f))
-            .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.24f)), RoundedCornerShape(20.dp))
+            .background(AtlasLogSurface)
+            .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.75f)), RoundedCornerShape(20.dp))
             .padding(14.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -537,7 +560,7 @@ private fun LogRow(index: Int, entry: AgentLogEntry) {
             Text(
                 entry.detail,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f)
+                color = AtlasMuted
             )
         }
     }
@@ -555,15 +578,18 @@ private fun StatusPill(status: AgentStatus) {
         is AgentStatus.Stopped -> "Stopped"
     }
     val color = when (status) {
-        AgentStatus.Idle -> Color(0xFF0D5C63)
-        is AgentStatus.Downloading -> Color(0xFF0D5C63)
+        AgentStatus.Idle -> AtlasTeal
+        is AgentStatus.Downloading -> AtlasTeal
         is AgentStatus.Planning -> Color(0xFF6C63FF)
-        is AgentStatus.Executing -> Color(0xFFF08A5D)
-        is AgentStatus.Completed -> Color(0xFF0D5C63)
+        is AgentStatus.Executing -> AtlasAmber
+        is AgentStatus.Completed -> AtlasTeal
         is AgentStatus.Failed -> Color(0xFFD1495B)
         is AgentStatus.Stopped -> Color(0xFF6D6875)
     }
-    val scale = animateFloatAsState(targetValue = if (status is AgentStatus.Executing) 1.02f else 1f, label = "pill-scale")
+    val scale = animateFloatAsState(
+        targetValue = if (status is AgentStatus.Executing) 1.02f else 1f,
+        label = "pill-scale"
+    )
 
     Box(
         modifier = Modifier
@@ -590,17 +616,17 @@ private fun GlassCard(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(30.dp),
-        color = Color.White.copy(alpha = 0.22f),
+        color = AtlasCard,
         shadowElevation = 18.dp,
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.35f))
+        border = BorderStroke(1.dp, AtlasCardBorder)
     ) {
         Column(
             modifier = Modifier
                 .background(
                     Brush.linearGradient(
                         listOf(
-                            Color.White.copy(alpha = 0.18f),
-                            Color.White.copy(alpha = 0.08f)
+                            Color.White.copy(alpha = 0.64f),
+                            Color(0xFFF7FBFC).copy(alpha = 0.46f)
                         )
                     )
                 )
