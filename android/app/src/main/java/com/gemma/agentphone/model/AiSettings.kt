@@ -17,12 +17,12 @@ data class AiSettings(
             return AiSettings(
                 activeProvider = "gemma-local",
                 activeModel = "gemma-4-e2b-it",
-                fallbackProvider = "relay-gemma",
-                fallbackModel = "gemma-4-9b-instruct",
+                fallbackProvider = "gemma-local",
+                fallbackModel = "gemma-4-e2b-it",
                 customPrompt = "",
                 autonomyMode = "confirmed-action",
                 allowCloudFallback = false,
-                relayEndpoint = "http://192.168.1.2:8080",
+                relayEndpoint = "",
                 modelDownloadUrl = com.gemma.agentphone.BuildConfig.DEFAULT_MODEL_DOWNLOAD_URL,
                 huggingFaceToken = ""
             )

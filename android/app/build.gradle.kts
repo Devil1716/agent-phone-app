@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "com.gemma.agentphone"
-    compileSdk = 34
+    compileSdk = 35
     val hasReleaseSigning = !System.getenv("ANDROID_KEYSTORE_PATH").isNullOrBlank() &&
         !System.getenv("ANDROID_KEYSTORE_PASSWORD").isNullOrBlank() &&
         !System.getenv("ANDROID_KEY_ALIAS").isNullOrBlank() &&
@@ -33,19 +33,35 @@ android {
 
     defaultConfig {
         applicationId = "com.gemma.agentphone"
-        minSdk = 28
-        targetSdk = 34
-        versionCode = (project.findProperty("versionCode") as String?)?.toInt() ?: 21
-        versionName = (project.findProperty("versionName") as String?) ?: "0.5.6"
+        minSdk = 26
+        targetSdk = 35
+        versionCode = (project.findProperty("versionCode") as String?)?.toInt() ?: 23
+        versionName = (project.findProperty("versionName") as String?) ?: "0.5.9"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "APP_REPO_OWNER", "\"Devil1716\"")
         buildConfigField("String", "APP_REPO_NAME", "\"agent-phone-app\"")
         buildConfigField(
             "String",
+            "GEMMA4_MODEL_URL",
+            "\"https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it-web.task?download=true\""
+        )
+        buildConfigField("String", "GEMMA4_MODEL_FILENAME", "\"gemma4.task\"")
+        buildConfigField(
+            "String",
+            "GEMMA4_MODEL_SOURCE_PAGE_URL",
+            "\"https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm\""
+        )
+        buildConfigField(
+            "String",
+            "GEMMA4_MODEL_SHA256",
+            "\"2cbff161177a4d51c9d04360016185976f504517ba5758cd10c1564e5421c5a5\""
+        )
+        buildConfigField(
+            "String",
             "DEFAULT_MODEL_DOWNLOAD_URL",
             "\"https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it-web.task?download=true\""
         )
-        buildConfigField("String", "DEFAULT_MODEL_FILENAME", "\"gemma-4-E2B-it-web.task\"")
+        buildConfigField("String", "DEFAULT_MODEL_FILENAME", "\"gemma4.task\"")
         buildConfigField(
             "String",
             "DEFAULT_MODEL_SOURCE_PAGE_URL",
@@ -115,9 +131,12 @@ dependencies {
     implementation("androidx.fragment:fragment-ktx:1.7.1")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.1")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.google.mediapipe:tasks-genai:0.10.27")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0")
+    implementation("com.google.code.gson:gson:2.10.1")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("com.google.truth:truth:1.4.4")

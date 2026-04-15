@@ -38,16 +38,10 @@ class AgentRuntimeFactory {
             modelFile = modelFile,
             providerRegistry = providerRegistry
         )
-        val orchestrator = AgentOrchestrator(
-            settings = settings,
-            primaryProvider = primaryProvider,
-            fallbackProvider = fallbackProvider
-        )
-
         return ExecutionCoordinator(
             goalInterpreter = PromptAwareGoalInterpreter(
                 settings = settings,
-                fallback = LlmGoalInterpreter(aiProvider = orchestrator)
+                fallback = LlmGoalInterpreter(aiProvider = primaryProvider ?: fallbackProvider)
             ),
             taskPlanner = TemplateTaskPlanner(),
             policyEngine = DefaultPolicyEngine(),
@@ -57,7 +51,7 @@ class AgentRuntimeFactory {
                 IntentExecutor(),
                 BrowserExecutor(),
                 AccessibilityExecutor(
-                    aiProvider = orchestrator,
+                    aiProvider = primaryProvider ?: fallbackProvider,
                     customPrompt = settings.customPrompt,
                     autonomyMode = settings.autonomyMode
                 )

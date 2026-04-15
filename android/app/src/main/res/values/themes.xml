@@ -14,10 +14,10 @@
         <item name="colorSurface">@color/surface</item>
         <item name="colorOnSurface">@color/onSurface</item>
 
-        <!-- Immersive status/nav bars -->
+        <!-- Calm, light control surface -->
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@color/background</item>
-        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightStatusBar">true</item>
 
         <item name="materialButtonStyle">@style/Widget.GemmaAgent.Button</item>
     </style>

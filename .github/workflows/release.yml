@@ -1,9 +1,7 @@
-name: Release Management
+name: Release
 
 on:
   push:
-    branches:
-      - main
     tags:
       - "v*"
   workflow_dispatch:
@@ -15,8 +13,8 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  build:
-    name: Build & Test
+  release:
+    name: Build And Publish Release
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -36,43 +34,22 @@ jobs:
         working-directory: android
         run: ./gradlew testDebugUnitTest
 
-      - name: Build Debug APK
+      - name: Decode release keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/release.jks
+
+      - name: Build signed release APK
         working-directory: android
-        run: ./gradlew assembleDebug
-
-      - name: Build Alpha APK
-        working-directory: android
-        run: ./gradlew assembleAlpha
-
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-outputs
-          path: |
-            android/app/build/outputs/apk/debug/*.apk
-            android/app/build/outputs/apk/alpha/*.apk
-          retention-days: 7
-
-  publish:
-    name: Publish Official Release
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Download Build Outputs
-        uses: actions/download-artifact@v4
-        with:
-          name: build-outputs
-          path: outputs
+        env:
+          ANDROID_KEYSTORE_PATH: release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./gradlew assembleRelease
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            outputs/debug/*.apk
-            outputs/alpha/*.apk
+          files: android/app/build/outputs/apk/release/*.apk
           generate_release_notes: true
           make_latest: true

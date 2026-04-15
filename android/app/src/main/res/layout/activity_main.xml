@@ -7,26 +7,6 @@
     android:background="@drawable/bg_gradient"
     android:fitsSystemWindows="true">
 
-    <View
-        android:layout_width="260dp"
-        android:layout_height="260dp"
-        android:layout_marginStart="-80dp"
-        android:layout_marginTop="-100dp"
-        android:alpha="0.06"
-        android:background="@drawable/cot_step_indicator"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <View
-        android:layout_width="200dp"
-        android:layout_height="200dp"
-        android:layout_marginEnd="-60dp"
-        android:layout_marginBottom="-60dp"
-        android:alpha="0.04"
-        android:background="@drawable/cot_step_indicator"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
     <LinearLayout
         android:id="@+id/headerBar"
         android:layout_width="match_parent"
@@ -47,18 +27,17 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:fontFamily="sans-serif-medium"
-                android:letterSpacing="-0.02"
-                android:text="Manus Mobile"
+                android:text="@string/app_name"
                 android:textColor="@color/onBackground"
-                android:textSize="22sp" />
+                android:textSize="22sp"
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/modelStatusText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="Gemma 4 - Ready"
+                android:text="Atlas Brain - Tap to Download"
                 android:textColor="@color/primary"
                 android:textSize="12sp" />
         </LinearLayout>
@@ -71,7 +50,7 @@
             android:background="@drawable/badge_bg"
             android:paddingHorizontal="12dp"
             android:paddingVertical="4dp"
-            android:text="Active"
+            android:text="Idle"
             android:textColor="@color/primary"
             android:textSize="11sp"
             android:textStyle="bold" />
@@ -109,6 +88,89 @@
         app:layout_constraintTop_toBottomOf="@id/headerBar" />
 
     <LinearLayout
+        android:id="@+id/modelDownloadCardMain"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/glass_card_bg"
+        android:orientation="vertical"
+        android:padding="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/headerDivider">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Atlas Brain"
+            android:textColor="@color/onBackground"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Download or import the on-device Gemma 4 LiteRT model so Atlas can reason locally and finish tasks reliably."
+            android:textColor="@color/secondary"
+            android:textSize="12sp" />
+
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/modelDownloadProgressBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:indicatorColor="@color/primary" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/modelDownloadPercent"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0%"
+                android:textColor="@color/onBackground"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/modelDownloadBytes"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:text="0.0 MB / 0.0 MB"
+                android:textColor="@color/secondary" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/downloadModelButtonMain"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Download Gemma 4" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/importModelButtonMain"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:text="Import Model" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
         android:id="@+id/cotPanel"
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -119,46 +181,28 @@
         android:orientation="vertical"
         android:padding="16dp"
         app:layout_constraintBottom_toTopOf="@id/inputBar"
-        app:layout_constraintTop_toBottomOf="@id/headerDivider">
+        app:layout_constraintTop_toBottomOf="@id/modelDownloadCardMain">
 
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp">
 
-            <LinearLayout
+            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_alignParentStart="true"
-                android:layout_centerVertical="true"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <View
-                    android:id="@+id/statusDot"
-                    android:layout_width="8dp"
-                    android:layout_height="8dp"
-                    android:background="@drawable/cot_step_indicator" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:text="Agent Control"
-                    android:textColor="@color/onBackground"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
+                android:text="Control Log"
+                android:textColor="@color/onBackground"
+                android:textSize="14sp"
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/cotStepCount"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
                 android:text="0 steps"
-                android:textColor="@color/secondary"
-                android:textSize="11sp" />
+                android:textColor="@color/secondary" />
         </RelativeLayout>
 
         <FrameLayout
@@ -170,10 +214,7 @@
                 android:id="@+id/cotRecycler"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:clipToPadding="false"
-                android:overScrollMode="never"
-                android:paddingBottom="8dp"
-                android:scrollbars="none" />
+                android:paddingBottom="8dp" />
 
             <LinearLayout
                 android:id="@+id/cotEmptyState"
@@ -183,83 +224,28 @@
                 android:gravity="center"
                 android:orientation="vertical">
 
-                <ImageView
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:layout_marginBottom="12dp"
-                    android:src="@android:drawable/ic_menu_agenda"
-                    app:tint="#33FFFFFF"
-                    tools:ignore="ContentDescription" />
-
                 <TextView
                     android:id="@+id/traceText"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:alpha="0.35"
-                    android:gravity="center"
-                    android:text="Enter a command to begin"
+                    android:text="@string/agent_log_empty"
                     android:textColor="@color/onBackground"
                     android:textSize="14sp" />
             </LinearLayout>
         </FrameLayout>
     </LinearLayout>
 
-    <LinearLayout
-        android:id="@+id/thinkingOverlay"
-        android:layout_width="match_parent"
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/stopAgentButton"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginBottom="8dp"
-        android:background="@drawable/glass_card_elevated_bg"
-        android:elevation="12dp"
-        android:orientation="vertical"
-        android:padding="16dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="96dp"
+        android:contentDescription="@string/stop_execution"
+        android:src="@android:drawable/ic_media_pause"
         android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@id/inputBar">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <com.google.android.material.progressindicator.CircularProgressIndicator
-                android:layout_width="18dp"
-                android:layout_height="18dp"
-                android:indeterminate="true"
-                app:indicatorColor="@color/primary"
-                app:indicatorSize="18dp"
-                app:trackThickness="2dp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:text="Thinking..."
-                android:textColor="@color/primary"
-                android:textSize="13sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-        <TextView
-            android:id="@+id/liveThoughtText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:ellipsize="end"
-            android:maxLines="2"
-            android:textColor="@color/cotThoughtText"
-            android:textSize="12sp" />
-
-        <TextView
-            android:id="@+id/liveActionText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textColor="@color/cotActionText"
-            android:textSize="11sp"
-            android:textStyle="italic" />
-    </LinearLayout>
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <LinearLayout
         android:id="@+id/inputBar"
@@ -289,25 +275,21 @@
             android:layout_height="wrap_content"
             android:layout_marginEnd="8dp"
             android:layout_weight="1"
-            app:boxStrokeWidth="0dp"
-            app:boxStrokeWidthFocused="0dp"
-            app:hintEnabled="false"
-            app:hintTextColor="@color/secondary">
+            app:hintEnabled="false">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/commandInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/glass_card_bg"
-                android:hint="Tell the agent what to do..."
+                android:hint="What do you want me to do?"
                 android:inputType="textMultiLine"
                 android:maxLines="3"
                 android:minLines="1"
                 android:paddingHorizontal="16dp"
                 android:paddingVertical="12dp"
                 android:textColor="@color/onBackground"
-                android:textColorHint="@color/secondary"
-                android:textSize="14sp" />
+                android:textColorHint="@color/secondary" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <ImageButton

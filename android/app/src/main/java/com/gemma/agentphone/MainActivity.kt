@@ -1,60 +1,55 @@
 package com.gemma.agentphone
 
+import android.Manifest
 import android.app.Activity
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.speech.RecognizerIntent
+import android.view.View
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.gemma.agentphone.agent.AgentRuntimeFactory
-import com.gemma.agentphone.agent.ExecutionTrace
-import com.gemma.agentphone.agent.ModelDownloadManager
-import com.gemma.agentphone.agent.ModelDownloadStatus
-import com.gemma.agentphone.agent.StepStatus
-import com.gemma.agentphone.agent.TraceEntry
-import com.gemma.agentphone.model.AiProviderRegistry
-import com.gemma.agentphone.model.AiSettingsRepository
-import com.gemma.agentphone.model.ExecutionHistoryEntry
-import com.gemma.agentphone.model.ExecutionHistoryRepository
-import com.gemma.agentphone.model.SharedPreferencesKeyValueStore
-import kotlinx.coroutines.Dispatchers
+import com.gemma.agentphone.accessibility.PhoneControlService
+import com.gemma.agentphone.agent.AgentOrchestrator
+import com.gemma.agentphone.agent.AgentRuntime
+import com.gemma.agentphone.agent.AgentStatus
+import com.gemma.agentphone.ui.AgentLogAdapter
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
     companion object {
         @JvmStatic
         var externalActionLauncher: ExternalActionLauncher = DefaultExternalActionLauncher
+
+        @JvmStatic
+        var runtimeFactoryOverride: ((android.content.Context) -> AgentRuntime)? = null
     }
 
-    private val providerRegistry = AiProviderRegistry()
-    private val runtimeFactory = AgentRuntimeFactory()
+    private val agentRuntime: AgentRuntime by lazy {
+        runtimeFactoryOverride?.invoke(this) ?: AgentOrchestrator(this)
+    }
+
     private lateinit var statusText: TextView
+    private lateinit var traceText: TextView
     private lateinit var commandInput: EditText
-    private lateinit var historyRepository: ExecutionHistoryRepository
-    private lateinit var modelDownloadManager: ModelDownloadManager
-    private lateinit var cotAdapter: CotStepAdapter
-    private lateinit var cotRecycler: RecyclerView
-    private lateinit var cotStepCount: TextView
-    private val modelStatusHandler = Handler(Looper.getMainLooper())
-
-    private val modelStatusRunnable = object : Runnable {
-        override fun run() {
-            val isStillDownloading = refreshModelStatus()
-            if (isStillDownloading) {
-                modelStatusHandler.postDelayed(this, 1_000)
-            }
-        }
-    }
+    private lateinit var modelStatusText: TextView
+    private lateinit var modelDownloadCard: View
+    private lateinit var modelDownloadProgress: com.google.android.material.progressindicator.LinearProgressIndicator
+    private lateinit var modelDownloadPercent: TextView
+    private lateinit var modelDownloadBytes: TextView
+    private lateinit var runCommandButton: View
+    private lateinit var stopAgentButton: View
+    private lateinit var logAdapter: AgentLogAdapter
+    private lateinit var logRecycler: RecyclerView
+    private lateinit var stepCountText: TextView
 
     private val speechLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -73,251 +68,188 @@ class MainActivity : AppCompatActivity() {
     private val importModelLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri ->
-        if (uri == null) {
-            return@registerForActivityResult
-        }
-
-        lifecycleScope.launch(Dispatchers.IO) {
-            val result = modelDownloadManager.importModel(uri)
-            withContext(Dispatchers.Main) {
-                if (result.isSuccess) {
-                    Toast.makeText(this@MainActivity, R.string.model_import_success, Toast.LENGTH_SHORT).show()
-                    refreshModelStatus()
-                } else {
-                    Toast.makeText(this@MainActivity, R.string.model_import_failure, Toast.LENGTH_SHORT).show()
-                }
-            }
+        if (uri != null) {
+            lifecycleScope.launch { agentRuntime.importModel(uri) }
         }
     }
+
+    private val permissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        historyRepository = ExecutionHistoryRepository(
-            SharedPreferencesKeyValueStore(
-                getSharedPreferences("execution_history", MODE_PRIVATE)
-            )
-        )
-        modelDownloadManager = ModelDownloadManager(this)
-
         statusText = findViewById(R.id.statusText)
+        traceText = findViewById(R.id.traceText)
         commandInput = findViewById(R.id.commandInput)
-        cotStepCount = findViewById(R.id.cotStepCount)
-        cotRecycler = findViewById(R.id.cotRecycler)
-        cotAdapter = CotStepAdapter()
-        cotRecycler.layoutManager = LinearLayoutManager(this)
-        cotRecycler.adapter = cotAdapter
+        modelStatusText = findViewById(R.id.modelStatusText)
+        modelDownloadCard = findViewById(R.id.modelDownloadCardMain)
+        modelDownloadProgress = findViewById(R.id.modelDownloadProgressBar)
+        modelDownloadPercent = findViewById(R.id.modelDownloadPercent)
+        modelDownloadBytes = findViewById(R.id.modelDownloadBytes)
+        runCommandButton = findViewById(R.id.runCommandButton)
+        stopAgentButton = findViewById(R.id.stopAgentButton)
+        logRecycler = findViewById(R.id.cotRecycler)
+        stepCountText = findViewById(R.id.cotStepCount)
 
-        findViewById<android.view.View>(R.id.openSettingsButton).setOnClickListener {
+        logAdapter = AgentLogAdapter()
+        logRecycler.layoutManager = LinearLayoutManager(this)
+        logRecycler.adapter = logAdapter
+
+        runCommandButton.setOnClickListener { runCommand() }
+        stopAgentButton.setOnClickListener { agentRuntime.cancelExecution() }
+        findViewById<View>(R.id.voiceInputButton).setOnClickListener { launchVoiceInput() }
+        findViewById<View>(R.id.openSettingsButton).setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
-        findViewById<android.view.View>(R.id.runCommandButton).setOnClickListener {
-            runCommand()
-        }
-        findViewById<android.view.View>(R.id.voiceInputButton).setOnClickListener {
-            launchVoiceInput()
-        }
-        findViewById<android.view.View>(R.id.historyButton).setOnClickListener {
+        findViewById<View>(R.id.historyButton).setOnClickListener {
             startActivity(Intent(this, HistoryActivity::class.java))
         }
+        findViewById<View>(R.id.downloadModelButtonMain).setOnClickListener {
+            lifecycleScope.launch { agentRuntime.startModelDownload() }
+        }
+        findViewById<View>(R.id.importModelButtonMain).setOnClickListener {
+            importModelLauncher.launch(arrayOf("*/*"))
+        }
+        modelStatusText.setOnClickListener {
+            if (!agentRuntime.isModelReady()) {
+                lifecycleScope.launch { agentRuntime.startModelDownload() }
+            }
+        }
+        modelStatusText.setOnLongClickListener {
+            importModelLauncher.launch(arrayOf("*/*"))
+            true
+        }
 
-        applyPrefillCommand(intent)
+        requestStartupPermissions()
+        observeRuntime()
     }
 
     override fun onResume() {
         super.onResume()
-        statusText.text = "Active"
-        refreshModelStatus()
+        if (!PhoneControlService.isEnabled(this)) {
+            Toast.makeText(
+                this,
+                "Enable the Atlas accessibility service to allow autonomous control.",
+                Toast.LENGTH_LONG
+            ).show()
+        }
     }
 
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        setIntent(intent)
-        applyPrefillCommand(intent)
-    }
-
-    override fun onPause() {
-        super.onPause()
-        modelStatusHandler.removeCallbacks(modelStatusRunnable)
+    private fun observeRuntime() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+                launch {
+                    agentRuntime.status.collect { status -> renderStatus(status) }
+                }
+                launch {
+                    agentRuntime.logs.collect { entries ->
+                        logAdapter.submit(entries)
+                        stepCountText.text = "${entries.size} steps"
+                        if (entries.isEmpty()) {
+                            traceText.text = getString(R.string.agent_log_empty)
+                        } else {
+                            traceText.text = entries.last().detail
+                            logRecycler.scrollToPosition(entries.lastIndex)
+                        }
+                    }
+                }
+                launch {
+                    agentRuntime.downloadState.collect { state ->
+                        val totalMb = state.totalBytes / 1024f / 1024f
+                        val downloadedMb = state.downloadedBytes / 1024f / 1024f
+                        modelStatusText.text = when {
+                            state.isReady -> "Atlas Brain - Ready"
+                            state.isVerifying -> getString(R.string.model_verifying)
+                            state.isDownloading -> state.message.ifBlank { "Atlas Brain - Downloading" }
+                            state.message.isNotBlank() -> state.message
+                            else -> "Atlas Brain - Tap to Download"
+                        }
+                        modelDownloadCard.visibility = if (state.isReady) View.GONE else View.VISIBLE
+                        modelDownloadProgress.progress = state.progressPercent
+                        modelDownloadPercent.text = getString(R.string.model_download_percent, state.progressPercent)
+                        modelDownloadBytes.text = getString(
+                            R.string.model_download_mb,
+                            downloadedMb,
+                            totalMb
+                        )
+                    }
+                }
+            }
+        }
     }
 
     private fun runCommand() {
-        val command = commandInput.text.toString()
+        val command = commandInput.text.toString().trim()
         if (command.isBlank()) {
             return
         }
+        lifecycleScope.launch {
+            agentRuntime.execute(command)
+        }
+    }
 
-        val runCommandButton = findViewById<android.view.View>(R.id.runCommandButton)
-        val thinkingOverlay = findViewById<android.view.View>(R.id.thinkingOverlay)
-        val liveThoughtText = findViewById<TextView>(R.id.liveThoughtText)
-        val liveActionText = findViewById<TextView>(R.id.liveActionText)
-        val cotEmptyState = findViewById<android.view.View>(R.id.cotEmptyState)
+    private fun renderStatus(status: AgentStatus) {
+        when (status) {
+            AgentStatus.Idle -> {
+                statusText.text = getString(R.string.agent_status_idle)
+                runCommandButton.isEnabled = true
+                stopAgentButton.visibility = View.GONE
+            }
 
-        runCommandButton.isEnabled = false
-        thinkingOverlay.visibility = android.view.View.VISIBLE
-        liveThoughtText.text = "Analyzing request..."
-        liveActionText.text = ""
-        cotAdapter.clear()
-        cotEmptyState.visibility = android.view.View.GONE
-        cotRecycler.visibility = android.view.View.VISIBLE
-        cotStepCount.text = "0 steps"
+            is AgentStatus.Downloading -> {
+                statusText.text = status.progressLabel
+                runCommandButton.isEnabled = false
+                stopAgentButton.visibility = View.GONE
+            }
 
-        lifecycleScope.launch(Dispatchers.Default) {
-            try {
-                val settings = AiSettingsRepository(this@MainActivity).load()
-                val trace = runtimeFactory.createCoordinator(this@MainActivity, settings, providerRegistry)
-                    .run(command) { progress ->
-                        runOnUiThread {
-                            liveThoughtText.text = progress.thought ?: progress.description
-                            liveActionText.text = progress.detail
-                            cotAdapter.addStep(progress)
-                            cotStepCount.text = "${cotAdapter.stepCount()} steps"
-                            cotRecycler.smoothScrollToPosition(cotAdapter.stepCount() - 1)
-                        }
-                    }
+            is AgentStatus.Planning -> {
+                statusText.text = getString(R.string.agent_status_planning)
+                runCommandButton.isEnabled = false
+                stopAgentButton.visibility = View.VISIBLE
+            }
 
-                withContext(Dispatchers.Main) {
-                    historyRepository.add(
-                        ExecutionHistoryEntry(
-                            timestampMs = System.currentTimeMillis(),
-                            commandText = command,
-                            category = trace.goal.category.name,
-                            strategy = trace.strategy.name,
-                            resultSummary = trace.finalMessage,
-                            awaitedConfirmation = trace.awaitingConfirmation
-                        )
-                    )
+            is AgentStatus.Executing -> {
+                statusText.text = "Step ${status.stepIndex}/${status.total}: ${status.step.summary()}"
+                runCommandButton.isEnabled = false
+                stopAgentButton.visibility = View.VISIBLE
+            }
 
-                    if (cotAdapter.stepCount() == 0) {
-                        cotAdapter.submitAll(trace.entries)
-                        cotStepCount.text = "${trace.entries.size} steps"
-                    }
+            is AgentStatus.Completed -> {
+                statusText.text = "${getString(R.string.agent_status_done)} OK"
+                traceText.text = status.summary
+                runCommandButton.isEnabled = true
+                stopAgentButton.visibility = View.GONE
+            }
 
-                    thinkingOverlay.visibility = android.view.View.GONE
+            is AgentStatus.Failed -> {
+                statusText.text = getString(R.string.agent_status_failed)
+                traceText.text = status.reason
+                runCommandButton.isEnabled = true
+                stopAgentButton.visibility = View.GONE
+            }
 
-                    if (trace.awaitingConfirmation) {
-                        showConfirmationDialog(trace)
-                    } else {
-                        trace.externalActions.forEach { externalActionLauncher.launch(this@MainActivity, it.spec) }
-                    }
-                    runCommandButton.isEnabled = true
-                }
-            } catch (exception: Exception) {
-                withContext(Dispatchers.Main) {
-                    thinkingOverlay.visibility = android.view.View.GONE
-                    cotAdapter.addStep(
-                        TraceEntry(
-                            stepId = "error",
-                            description = "Agent execution failed",
-                            status = StepStatus.BLOCKED,
-                            executorName = "Runtime",
-                            thought = exception.localizedMessage ?: "Unknown error",
-                            detail = "Check that the local model is ready or that your fallback provider is configured."
-                        )
-                    )
-                    cotStepCount.text = "${cotAdapter.stepCount()} steps"
-                    runCommandButton.isEnabled = true
-                }
+            is AgentStatus.Stopped -> {
+                statusText.text = status.reason
+                runCommandButton.isEnabled = true
+                stopAgentButton.visibility = View.GONE
             }
         }
     }
 
-    private fun startModelDownload() {
-        val settings = AiSettingsRepository(this).load()
-        val result = modelDownloadManager.startDownload(
-            downloadUrl = settings.modelDownloadUrl,
-            huggingFaceToken = settings.huggingFaceToken
-        )
-        if (result.isSuccess) {
-            Toast.makeText(this, R.string.model_download_started, Toast.LENGTH_SHORT).show()
-            refreshModelStatus()
-        } else {
-            val messageRes = if (settings.modelDownloadUrl.isBlank()) {
-                R.string.model_download_missing_url
-            } else {
-                R.string.model_download_failure
-            }
-            Toast.makeText(this, messageRes, Toast.LENGTH_SHORT).show()
+    private fun requestStartupPermissions() {
+        val permissions = mutableListOf<String>()
+        if (Build.VERSION.SDK_INT <= 28) {
+            permissions += Manifest.permission.WRITE_EXTERNAL_STORAGE
         }
-    }
-
-    private fun refreshModelStatus(): Boolean {
-        val modelStatusTextView = findViewById<TextView>(R.id.modelStatusText)
-
-        return when (val status = modelDownloadManager.getStatus()) {
-            is ModelDownloadStatus.Ready -> {
-                modelStatusTextView.text = "Gemma 4 - Ready"
-                modelStatusTextView.setOnClickListener(null)
-                modelStatusTextView.setOnLongClickListener(null)
-                false
-            }
-
-            is ModelDownloadStatus.Downloading -> {
-                modelStatusTextView.text = "Downloading - ${status.progress}%"
-                modelStatusTextView.setOnClickListener(null)
-                modelStatusTextView.setOnLongClickListener(null)
-                modelStatusHandler.removeCallbacks(modelStatusRunnable)
-                modelStatusHandler.postDelayed(modelStatusRunnable, 1_000)
-                true
-            }
-
-            is ModelDownloadStatus.Failed -> {
-                modelStatusTextView.text = "Model - Error (Tap)"
-                modelStatusTextView.setOnClickListener {
-                    Toast.makeText(this@MainActivity, status.message, Toast.LENGTH_LONG).show()
-                }
-                modelStatusTextView.setOnLongClickListener {
-                    importModelLauncher.launch(arrayOf("*/*"))
-                    true
-                }
-                false
-            }
-
-            ModelDownloadStatus.Missing -> {
-                modelStatusTextView.text = "Model - Tap to Download"
-                modelStatusTextView.setOnClickListener {
-                    startModelDownload()
-                }
-                modelStatusTextView.setOnLongClickListener {
-                    importModelLauncher.launch(arrayOf("*/*"))
-                    true
-                }
-                false
-            }
+        if (Build.VERSION.SDK_INT >= 33) {
+            permissions += Manifest.permission.POST_NOTIFICATIONS
         }
-    }
-
-    private fun showConfirmationDialog(trace: ExecutionTrace) {
-        val pendingEntry = trace.entries.firstOrNull { it.status == StepStatus.PENDING_CONFIRMATION }
-        val dialog = ConfirmationDialogFragment.newInstance(
-            stepDescription = pendingEntry?.description ?: "Continue with this action?",
-            stepReason = pendingEntry?.detail ?: ""
-        )
-        dialog.onConfirm = {
-            cotAdapter.addStep(
-                TraceEntry(
-                    stepId = "confirmed",
-                    description = "User approved the pending action",
-                    status = StepStatus.SUCCESS,
-                    executorName = "User",
-                    detail = "Confirmed"
-                )
-            )
-            trace.externalActions.forEach { externalActionLauncher.launch(this, it.spec) }
+        if (permissions.isNotEmpty()) {
+            permissionLauncher.launch(permissions.toTypedArray())
         }
-        dialog.onCancel = {
-            cotAdapter.addStep(
-                TraceEntry(
-                    stepId = "canceled",
-                    description = "User canceled execution",
-                    status = StepStatus.SKIPPED,
-                    executorName = "User",
-                    detail = "Canceled"
-                )
-            )
-        }
-        dialog.show(supportFragmentManager, ConfirmationDialogFragment.TAG)
     }
 
     private fun launchVoiceInput() {
@@ -330,13 +262,6 @@ class MainActivity : AppCompatActivity() {
             speechLauncher.launch(intent)
         } catch (_: Exception) {
             Toast.makeText(this, "Voice input is not available on this device.", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private fun applyPrefillCommand(intent: Intent?) {
-        intent?.getStringExtra("prefill_command")?.let { prefill ->
-            commandInput.setText(prefill)
-            commandInput.setSelection(prefill.length)
         }
     }
 }
