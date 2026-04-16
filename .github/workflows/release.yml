@@ -45,7 +45,7 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: ./gradlew assembleRelease
+        run: ./gradlew assembleRelease --no-daemon --parallel --console=plain
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

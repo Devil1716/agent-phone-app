@@ -411,6 +411,7 @@ private fun CommandCard(
     }
 }
 
+@Composable
 private fun ModelCard(
     downloadState: ModelDownloadState,
     onDownloadModel: () -> Unit,

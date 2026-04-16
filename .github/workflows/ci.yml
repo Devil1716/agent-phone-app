@@ -25,13 +25,9 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x android/gradlew
 
-      - name: Lint, unit test, and build debug APK
+      - name: Build and test
         working-directory: android
-        run: ./gradlew lintDebug testDebugUnitTest assembleDebug
-
-      - name: Build alpha APK (verify alpha config)
-        working-directory: android
-        run: ./gradlew assembleAlpha
+        run: ./gradlew assembleDebug assembleAlpha testDebugUnitTest --parallel --no-daemon --console=plain
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
