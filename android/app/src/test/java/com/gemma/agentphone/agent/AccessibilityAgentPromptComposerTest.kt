@@ -42,8 +42,9 @@ class AccessibilityAgentPromptComposerTest {
         )
 
         assertThat(prompt).contains("Open Wi-Fi settings")
-        assertThat(prompt).contains("package=com.android.settings")
+        assertThat(prompt).contains("com.android.settings")
         assertThat(prompt).contains("[#3] depth=1 role=button label=\"Wi-Fi\"")
-        assertThat(prompt).contains("\"action\":\"TAP|SWIPE|TYPE|LONG_PRESS|WAIT|BACK|HOME|COMPLETE\"")
+        assertThat(prompt).contains("\"reasoning\":")
+        assertThat(prompt).contains("\"action\": \"TAP|SWIPE|TYPE|LONG_PRESS|WAIT|BACK|HOME|COMPLETE\"")
     }
 }
