@@ -1,13 +1,21 @@
 package com.gemma.agentphone.agent
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Environment
 import android.util.Log
+import androidx.core.content.FileProvider
 import com.gemma.agentphone.BuildConfig
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import org.json.JSONArray
 import org.json.JSONObject
+import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
 
 class UpdateManager {
@@ -20,9 +28,9 @@ class UpdateManager {
         val request = Request.Builder()
             .url(repoUrl)
             .header("Accept", "application/vnd.github+json")
-            .header("User-Agent", "Gemma-Agent-Phone-App")
+            .header("User-Agent", "Atlas-Update-Manager")
             .build()
-            // ...
+        
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
                 Log.w("UpdateManager", "Failed to check for updates", e)
@@ -36,13 +44,12 @@ class UpdateManager {
                     }
 
                     val body = it.body?.string().orEmpty()
-                    val jsonArray = org.json.JSONArray(body)
+                    val jsonArray = JSONArray(body)
                     if (jsonArray.length() == 0) return
 
                     val json = jsonArray.getJSONObject(0)
                     val latestVersion = json.optString("tag_name", "")
                     
-                    // Try to find a direct APK download link in assets first
                     var downloadUrl = ""
                     val assets = json.optJSONArray("assets")
                     if (assets != null) {
@@ -56,7 +63,6 @@ class UpdateManager {
                         }
                     }
 
-                    // Fallback to the release page if no direct APK asset is found
                     if (downloadUrl.isBlank()) {
                         downloadUrl = json.optString("html_url", "")
                     }
@@ -67,6 +73,50 @@ class UpdateManager {
                 }
             }
         })
+    }
+
+    fun downloadAndInstallUpdate(context: Context, url: String) {
+        val request = Request.Builder().url(url).build()
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                Log.e("UpdateManager", "Failed to download update APK", e)
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                if (!response.isSuccessful) {
+                    Log.e("UpdateManager", "Failed to download APK: ${response.code}")
+                    return
+                }
+
+                try {
+                    val updateFile = File(
+                        context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),
+                        "atlas_update.apk"
+                    )
+                    FileOutputStream(updateFile).use { output ->
+                        response.body?.byteStream()?.copyTo(output)
+                    }
+
+                    installApk(context, updateFile)
+                } catch (e: Exception) {
+                    Log.e("UpdateManager", "Error saving or installing APK", e)
+                }
+            }
+        })
+    }
+
+    private fun installApk(context: Context, file: File) {
+        val uri = FileProvider.getUriForFile(
+            context,
+            "${BuildConfig.APPLICATION_ID}.fileprovider",
+            file
+        )
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "application/vnd.android.package-archive")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(intent)
     }
 
     private fun isNewerVersion(latest: String): Boolean {
@@ -85,7 +135,7 @@ class UpdateManager {
     }
 
     private fun normalizeVersion(raw: String): List<Int> {
-        return raw
+        return raw.lowercase()
             .trim()
             .removePrefix("v")
             .split('.', '-', '_')

@@ -29,7 +29,8 @@ data class ModelDownloadState(
     val progressPercent: Int = 0,
     val downloadedBytes: Long = 0L,
     val totalBytes: Long = 0L,
-    val message: String = ""
+    val message: String = "",
+    val errorDetails: String? = null
 )
 
 class GemmaModelManager(
@@ -150,6 +151,16 @@ class GemmaModelManager(
         }
     }
 
+    suspend fun scanDownloadsForModel(): File? {
+        return withContext(Dispatchers.IO) {
+            val downloadDir = File("/sdcard/Download")
+            if (!downloadDir.exists()) return@withContext null
+            
+            val candidates = listOf(modelFileName, "gemma-2b-it-gpu.task", "gemma4.task")
+            candidates.map { File(downloadDir, it) }.firstOrNull { it.exists() && it.length() > 0 }
+        }
+    }
+
     private suspend fun downloadWithRetries(downloadUrl: String, huggingFaceToken: String) {
         require(downloadUrl.isNotBlank()) { "A Gemma 4 download URL is required." }
 
@@ -173,6 +184,7 @@ class GemmaModelManager(
                 val canRetry = attempt < maxDownloadRetries && !isStorageFull(throwable)
                 _downloadState.value = failureState(
                     message = buildFailureMessage(throwable, canRetry),
+                    errorDetails = throwable.localizedMessage ?: throwable.toString(),
                     downloadedBytes = partialFile.length()
                 )
                 if (!canRetry) {
@@ -387,7 +399,7 @@ class GemmaModelManager(
         )
     }
 
-    private fun failureState(message: String, downloadedBytes: Long): ModelDownloadState {
+    private fun failureState(message: String, errorDetails: String?, downloadedBytes: Long): ModelDownloadState {
         return ModelDownloadState(
             isReady = false,
             isDownloading = false,
@@ -395,7 +407,8 @@ class GemmaModelManager(
             progressPercent = progress(downloadedBytes, downloadedBytes),
             downloadedBytes = downloadedBytes,
             totalBytes = downloadedBytes,
-            message = message
+            message = message,
+            errorDetails = errorDetails
         )
     }
 

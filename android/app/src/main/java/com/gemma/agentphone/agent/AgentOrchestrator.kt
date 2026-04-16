@@ -108,6 +108,19 @@ class AgentOrchestrator(
         }
     }
 
+    override suspend fun tryQuickImport(): Boolean {
+        return try {
+            val localFile = modelManager.scanDownloadsForModel() ?: return false
+            AppLogger.i(context, TAG, "Found local model file in Downloads: ${localFile.absolutePath}")
+            modelManager.importModel(Uri.fromFile(localFile))
+            AgentSessionStore.updateStatus(AgentStatus.Idle)
+            true
+        } catch (throwable: Throwable) {
+            AppLogger.e(context, TAG, "Quick import failed.", throwable)
+            false
+        }
+    }
+
     override fun cancelExecution() {
         runCatching {
             context.startService(AgentAutomationService.buildStopIntent(context))

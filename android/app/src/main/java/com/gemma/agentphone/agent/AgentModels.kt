@@ -64,5 +64,6 @@ interface AgentRuntime {
     suspend fun execute(command: String)
     suspend fun startModelDownload()
     suspend fun importModel(uri: Uri)
+    suspend fun tryQuickImport(): Boolean
     fun cancelExecution()
 }

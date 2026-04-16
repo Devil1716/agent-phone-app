@@ -22,10 +22,12 @@ data class AccessibilityActionCommand(
     val endY: Int? = null,
     val text: String = "",
     val durationMs: Long = 650L,
-    val reason: String = ""
+    val reason: String = "",
+    val reasoning: String = "",
+    val target: String = ""
 ) {
     fun toAgentStep(): AgentStep {
-        val target = when {
+        val defaultTarget = when {
             nodeId != null -> "node#$nodeId"
             x != null && y != null -> "$x,$y"
             startX != null && startY != null && endX != null && endY != null ->
@@ -39,9 +41,9 @@ data class AccessibilityActionCommand(
         }
         return AgentStep(
             action = action.name,
-            target = target,
+            target = target.ifBlank { defaultTarget },
             value = value,
-            reason = reason.ifBlank { defaultReason() }
+            reason = reasoning.ifBlank { reason.ifBlank { defaultReason() } }
         )
     }
 

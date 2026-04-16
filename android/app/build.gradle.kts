@@ -35,8 +35,8 @@ android {
         applicationId = "com.gemma.agentphone"
         minSdk = 26
         targetSdk = 35
-        versionCode = (project.findProperty("versionCode") as String?)?.toInt() ?: 27
-        versionName = (project.findProperty("versionName") as String?) ?: "0.7.0"
+        versionCode = (project.findProperty("versionCode") as String?)?.toInt() ?: 28
+        versionName = (project.findProperty("versionName") as String?) ?: "0.8.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "APP_REPO_OWNER", "\"Devil1716\"")
         buildConfigField("String", "APP_REPO_NAME", "\"agent-phone-app\"")

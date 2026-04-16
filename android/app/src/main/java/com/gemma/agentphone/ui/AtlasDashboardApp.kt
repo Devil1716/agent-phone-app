@@ -91,6 +91,8 @@ fun AtlasDashboardApp(
     onOpenHistory: () -> Unit,
     onDownloadModel: () -> Unit,
     onImportModel: () -> Unit,
+    onQuickImport: () -> Unit,
+    onOpenBrowserDownload: () -> Unit,
     onOpenAccessibilitySettings: () -> Unit
 ) {
     val colors = lightColorScheme(
@@ -163,7 +165,9 @@ fun AtlasDashboardApp(
                     ModelCard(
                         downloadState = downloadState,
                         onDownloadModel = onDownloadModel,
-                        onImportModel = onImportModel
+                        onImportModel = onImportModel,
+                        onQuickImport = onQuickImport,
+                        onOpenBrowserDownload = onOpenBrowserDownload
                     )
                 }
 
@@ -407,11 +411,12 @@ private fun CommandCard(
     }
 }
 
-@Composable
 private fun ModelCard(
     downloadState: ModelDownloadState,
     onDownloadModel: () -> Unit,
-    onImportModel: () -> Unit
+    onImportModel: () -> Unit,
+    onQuickImport: () -> Unit,
+    onOpenBrowserDownload: () -> Unit
 ) {
     val normalizedProgress = when {
         downloadState.isReady -> 1f
@@ -427,20 +432,29 @@ private fun ModelCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("On-device Gemma runtime", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Text(
                         downloadState.message.ifBlank {
                             "Import or download a compatible MediaPipe Gemma task bundle to enable local execution."
                         },
                         style = MaterialTheme.typography.bodyMedium,
-                        color = AtlasMuted
+                        color = if (downloadState.errorDetails != null) Color(0xFFD1495B) else AtlasMuted
                     )
                 }
 
                 if (downloadState.isDownloading || downloadState.isVerifying) {
                     CircularProgressIndicator(modifier = Modifier.size(28.dp), strokeWidth = 2.5.dp)
                 }
+            }
+
+            if (downloadState.errorDetails != null) {
+                Text(
+                    text = "Technical Detail: ${downloadState.errorDetails}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFFD1495B),
+                    modifier = Modifier.padding(top = 4.dp)
+                )
             }
 
             LinearProgressIndicator(
@@ -459,30 +473,59 @@ private fun ModelCard(
                 color = AtlasMuted
             )
 
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(
-                    onClick = onDownloadModel,
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag("downloadModelButton")
-                ) {
-                    Icon(Icons.Rounded.Download, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Download")
-                }
-                Button(
-                    onClick = onImportModel,
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag("importModelButton"),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.White.copy(alpha = 0.58f),
-                        contentColor = AtlasInk
+            if (downloadState.errorDetails != null) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Button(
+                            onClick = onQuickImport,
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(containerColor = AtlasTeal)
+                        ) {
+                            Text("Scan Downloads")
+                        }
+                        Button(
+                            onClick = onOpenBrowserDownload,
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color.White.copy(alpha = 0.58f),
+                                contentColor = AtlasInk
+                            )
+                        ) {
+                            Text("Try Browser")
+                        }
+                    }
+                    Text(
+                        "Tip: If your network is blocking the site, download the model on your PC and ADB push it to /sdcard/Download/gemma4.task",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AtlasMuted
                     )
-                ) {
-                    Icon(Icons.Rounded.Upload, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Import")
+                }
+            } else {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Button(
+                        onClick = onDownloadModel,
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("downloadModelButton")
+                    ) {
+                        Icon(Icons.Rounded.Download, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Download")
+                    }
+                    Button(
+                        onClick = onImportModel,
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("importModelButton"),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.White.copy(alpha = 0.58f),
+                            contentColor = AtlasInk
+                        )
+                    ) {
+                        Icon(Icons.Rounded.Upload, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Import")
+                    }
                 }
             }
         }

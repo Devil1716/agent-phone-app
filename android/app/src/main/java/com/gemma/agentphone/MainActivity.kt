@@ -71,6 +71,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         accessibilityEnabled = PhoneControlService.isEnabled(this)
         requestStartupPermissions()
+        checkForUpdates()
 
         setContent {
             val status by agentRuntime.status.collectAsState()
@@ -97,6 +98,19 @@ class MainActivity : ComponentActivity() {
                     lifecycleScope.launch { agentRuntime.startModelDownload() }
                 },
                 onImportModel = { importModelLauncher.launch(arrayOf("*/*")) },
+                onQuickImport = {
+                    lifecycleScope.launch {
+                        val success = agentRuntime.tryQuickImport()
+                        if (!success) {
+                            Toast.makeText(this@MainActivity, "No model file found in Downloads folder.", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                },
+                onOpenBrowserDownload = {
+                    val settings = com.gemma.agentphone.model.AiSettingsRepository(this@MainActivity).load()
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(settings.modelDownloadUrl))
+                    startActivity(intent)
+                },
                 onOpenAccessibilitySettings = {
                     startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
                 }
@@ -139,6 +153,22 @@ class MainActivity : ComponentActivity() {
             speechLauncher.launch(intent)
         } catch (_: Exception) {
             Toast.makeText(this, "Voice input is not available on this device.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun checkForUpdates() {
+        com.gemma.agentphone.agent.UpdateManager().checkForUpdates { version, url ->
+            runOnUiThread {
+                com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                    .setTitle("Update Available")
+                    .setMessage("A new version of Atlas ($version) is available. Would you like to download and install it now?")
+                    .setPositiveButton("Download") { _, _ ->
+                        Toast.makeText(this, "Downloading update in background...", Toast.LENGTH_LONG).show()
+                        com.gemma.agentphone.agent.UpdateManager().downloadAndInstallUpdate(this, url)
+                    }
+                    .setNegativeButton("Later", null)
+                    .show()
+            }
         }
     }
 

@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.0] - 2026-04-16
+
+### Added
+- **Self-Update Pipeline** — Atlas can now check for, download, and trigger its own updates via GitHub Releases. Integrated `REQUEST_INSTALL_PACKAGES` and `FileProvider` for secure on-device installation.
+- **Agent Reasoning Overhaul** — Refactored the internal prompt schema to use MobiAgent-inspired "Reasoning -> Action -> Parameters" structures for higher planning reliability.
+- **Manual Model Import** — Added "Quick Import" from the `Downloads` folder to bypass gated model download failures and simplified the ADB setup guide.
+
+### Changed
+- **Connectivity Hardening** — Added detailed error tracing for model downloads (e.g., DNS/Authentication failures) and provided browser-based fallback links.
+
 ## [0.7.0] - 2026-04-16
 
 ### Added

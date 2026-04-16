@@ -25,7 +25,9 @@ class AccessibilityActionParser {
             endY = jsonObject.readInt("endY"),
             text = jsonObject.readString("text").orEmpty(),
             durationMs = jsonObject.readLong("durationMs") ?: 650L,
-            reason = jsonObject.readString("reason").orEmpty()
+            reason = jsonObject.readString("reason").orEmpty(),
+            reasoning = jsonObject.readString("reasoning").orEmpty(),
+            target = jsonObject.readString("target").orEmpty()
         )
 
         validate(command)
