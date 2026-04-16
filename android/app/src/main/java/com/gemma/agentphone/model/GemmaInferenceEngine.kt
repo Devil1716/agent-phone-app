@@ -18,7 +18,9 @@ import kotlin.coroutines.resumeWithException
 
 class GemmaInferenceEngine(
     private val context: Context,
-    private val modelManager: GemmaModelManager
+    private val modelManager: GemmaModelManager,
+    /** Sampling temperature for the Gemma 4 agent. 0.1f balances determinism with agentic flexibility. */
+    private val temperature: Float = 0.1f
 ) : TextGenerationEngine {
     companion object {
         private const val TAG = "GemmaInferenceEngine"
@@ -37,7 +39,7 @@ class GemmaInferenceEngine(
                 val startNs = System.nanoTime()
                 val llm = getOrCreateInference()
                 val sessionOptions = LlmInferenceSession.LlmInferenceSessionOptions.builder()
-                    .setTemperature(0.05f)
+                    .setTemperature(temperature)
                     .setTopK(40)
                     .setTopP(0.9f)
                     .build()

@@ -50,6 +50,34 @@ The app repo uses a multi-stage workflow set:
 3. Run `android/gradlew testDebugUnitTest`.
 4. Run `android/gradlew connectedDebugAndroidTest` with an emulator or device connected.
 
+## On-Device Model (Gemma 4)
+
+The app runs **Gemma 4** fully on-device using the [Google AI Edge LiteRT](https://ai.google.dev/edge/litert) runtime (formerly MediaPipe).
+No internet connection is required for inference once the model file is present.
+
+### Model format
+
+The app expects a **MediaPipe LiteRT task bundle** (`.task` file), **not** a raw `.gguf` or `.bin` file.
+A task bundle is a ZIP archive containing the tokenizer and quantised TFLite weights.
+
+### Getting the model
+
+1. Accept the Gemma model terms on [Hugging Face](https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm).
+2. Generate a Hugging Face access token and paste it into **Settings → Hugging Face token** inside the app.
+3. Tap **Download Gemma 4** — the app will download, verify (SHA-256), and cache the file automatically.
+
+Alternatively, download the `.task` file manually and use **Import Gemma File** to load it from your device.
+
+### Architecture
+
+| Layer | Implementation |
+|---|---|
+| Prompt formatting | `GemmaPromptFormatter` — Gemma 4 instruct chat template (`<start_of_turn>`) |
+| Inference engine | `GemmaInferenceEngine` — MediaPipe `LlmInference`, GPU→CPU fallback, temperature 0.1f |
+| Model management | `GemmaModelManager` — resumable download, SHA-256 verification, import support |
+| Agent loop | `AccessibilityAgentLoop` — 18-step sense-plan-act loop driven by Gemma 4 |
+| Node grounding | `AccessibilityNodeGrounder` — resolves Gemma text labels to live accessibility nodeIds |
+
 ## Status
 
 The current codebase contains:

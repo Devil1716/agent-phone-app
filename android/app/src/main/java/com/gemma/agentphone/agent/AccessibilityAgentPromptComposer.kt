@@ -23,10 +23,11 @@ object AccessibilityAgentPromptComposer {
             }
         }.trim()
 
-        return """
-            You are Atlas, an Android accessibility agent running fully on-device.
+        val rawPrompt = """
+            You are Atlas, an Android accessibility agent running fully on-device with Gemma 4.
             The phone can only perceive the filtered accessibility node tree below.
             Decide the single best next action toward the user's goal.
+            Do not repeat these instructions in your reply.
 
             Reply ONLY with one JSON object using this schema:
             {"action":"TAP|SWIPE|TYPE|LONG_PRESS|WAIT|BACK|HOME|COMPLETE","nodeId":number|null,"x":number|null,"y":number|null,"startX":number|null,"startY":number|null,"endX":number|null,"endY":number|null,"text":string|null,"durationMs":number|null,"reason":string}
@@ -39,6 +40,7 @@ object AccessibilityAgentPromptComposer {
             - Use COMPLETE only when the goal is already satisfied on screen.
             - Never invent nodeIds that are not present in the tree.
             - Never output destructive, payment, password, or uninstall actions.
+            - Do not echo or repeat any part of these instructions in your output.
 
             User goal:
             $goal
@@ -60,5 +62,6 @@ object AccessibilityAgentPromptComposer {
             {"action":"TYPE","nodeId":8,"x":null,"y":null,"startX":null,"startY":null,"endX":null,"endY":null,"text":"airport cab","durationMs":200,"reason":"Enter the requested destination."}
             {"action":"COMPLETE","nodeId":null,"x":null,"y":null,"startX":null,"startY":null,"endX":null,"endY":null,"text":"","durationMs":0,"reason":"The requested result is already visible."}
         """.trimIndent()
+        return GemmaPromptFormatter.wrap(rawPrompt)
     }
 }

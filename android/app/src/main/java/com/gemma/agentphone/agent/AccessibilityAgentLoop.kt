@@ -9,7 +9,8 @@ class AccessibilityAgentLoop(
     private val context: Context,
     private val engine: TextGenerationEngine,
     private val parser: AccessibilityActionParser = AccessibilityActionParser(),
-    private val dispatcher: AccessibilityActionDispatcher = AccessibilityActionDispatcher()
+    private val dispatcher: AccessibilityActionDispatcher = AccessibilityActionDispatcher(),
+    private val grounder: AccessibilityNodeGrounder = AccessibilityNodeGrounder()
 ) {
     companion object {
         private const val MAX_STEPS = 18
@@ -166,7 +167,7 @@ class AccessibilityAgentLoop(
     ): AccessibilityActionCommand {
         var previousResponse = ""
         repeat(3) { attempt ->
-            previousResponse = engine.generate(
+            val rawResponse = engine.generate(
                 if (attempt == 0) {
                     AccessibilityAgentPromptComposer.compose(
                         goal = goal,
@@ -176,17 +177,51 @@ class AccessibilityAgentLoop(
                         reflection = reflection
                     )
                 } else {
-                    """
-                    Rewrite the previous answer as ONLY one valid JSON object matching the agreed schema.
-                    Previous answer:
-                    $previousResponse
-                    """.trimIndent()
+                    GemmaPromptFormatter.wrap(
+                        """
+                        Rewrite the previous answer as ONLY one valid JSON object matching the agreed schema.
+                        Previous answer:
+                        $previousResponse
+                        """.trimIndent()
+                    )
                 }
             )
-            runCatching { parser.parse(previousResponse) }.getOrNull()?.let { return it }
+            // Strip any Gemma chat-template markers the model echoed back before parsing.
+            previousResponse = GemmaPromptFormatter.stripMarkers(rawResponse)
+            runCatching { parser.parse(previousResponse) }.getOrNull()?.let { command ->
+                return groundCommand(command, snapshot)
+            }
         }
 
-        throw IllegalStateException("Gemma did not return valid JSON for the next action.")
+        throw IllegalStateException("Gemma 4 did not return valid JSON for the next action.")
+    }
+
+    /**
+     * Attempts to resolve a missing nodeId using [AccessibilityNodeGrounder] when Gemma 4
+     * describes a target in the reason field instead of providing a numeric nodeId.
+     * For actions that require a target (TAP, LONG_PRESS), this is a best-effort fallback;
+     * if grounding fails the original (potentially incomplete) command is returned as-is so
+     * the dispatcher can apply its own heuristics or fail gracefully.
+     */
+    private fun groundCommand(
+        command: AccessibilityActionCommand,
+        snapshot: AccessibilitySnapshot
+    ): AccessibilityActionCommand {
+        val needsGrounding = command.nodeId == null &&
+            command.x == null &&
+            command.reason.isNotBlank() &&
+            (command.action == AccessibilityActionType.TAP ||
+                command.action == AccessibilityActionType.LONG_PRESS)
+        if (!needsGrounding) {
+            return command
+        }
+        val resolvedId = grounder.groundByText(command.reason, snapshot)
+            ?: grounder.groundByText(command.text, snapshot)
+        return if (resolvedId != null) {
+            command.copy(nodeId = resolvedId)
+        } else {
+            command
+        }
     }
 
     private fun perceptionLog(snapshot: AccessibilitySnapshot): String {

@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.0] - 2026-04-16
+
+### Added
+- **Gemma 4 Prompt Hardening** — Integrated `GemmaPromptFormatter` to wrap all agent interactions in the correct `<start_of_turn>` instruct tokens, preventing model drift and ensuring strict JSON compliance.
+- **Accessibility Node Grounder** — Added a 5-tier matching engine (exact → contains → fuzzy Levenshtein) that resolves plain-text agent targets to concrete accessibility nodeIds.
+- **On-Device Documentation** — Major README overhaul with setup guides for MediaPipe LiteRT task bundles and Hugging Face gated model access.
+
+### Changed
+- **Inference Optimization** — Tuned the default Gemma 4 sampling temperature to `0.1f` for a better balance of determinism and agentic flexibility.
+- **Resilient Agent Loop** — `AccessibilityAgentLoop` now automatically handles echoed chat markers and grounds ambiguous UI targets using reason-text fallbacks.
+
+
 ## [0.6.1] - 2026-04-15
 
 ### Fixed
